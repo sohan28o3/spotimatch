@@ -619,6 +619,14 @@ export default function Home() {
         </div>
 
         <div className="flex items-center gap-3">
+          <a
+            href="https://discord.gg/77TfPWPXup"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-full border border-[#5865f2]/40 bg-[#5865f2]/15 px-3 py-2 text-[11px] font-bold text-[#c8cdfd] transition hover:bg-[#5865f2]/25 sm:px-4 sm:text-xs"
+          >
+            Join Discord
+          </a>
           {loggedIn && account.profile ? (
             <div className="flex items-center gap-3">
               <div className="relative">

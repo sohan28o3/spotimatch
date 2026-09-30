@@ -2,7 +2,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   Radio,
-  Sparkles,
   Send,
   Plus,
   Disc3,
@@ -281,6 +280,7 @@ export function ChatView({
   }, []);
 
   function openMobileChannel(channelId: string) {
+    if (channelId !== "global") setDmLoading(true);
     setActiveChannel(channelId);
     if (window.innerWidth < 1024) {
       window.history.pushState(
@@ -305,6 +305,7 @@ export function ChatView({
 
   // Global Chat State
   const [globalMessages, setGlobalMessages] = useState<ChatMessage[]>([]);
+  const [globalLoading, setGlobalLoading] = useState(true);
   const [globalInputText, setGlobalInputText] = useState(initialInput || "");
   const [onlineCount, setOnlineCount] = useState<number>(0);
   const [globalSending, setGlobalSending] = useState(false);
@@ -317,6 +318,7 @@ export function ChatView({
 
   // Direct Message State
   const [dmMessages, setDmMessages] = useState<DirectChatMessage[]>([]);
+  const [dmLoading, setDmLoading] = useState(false);
   const [dmInputText, setDmInputText] = useState("");
   const [dmSending, setDmSending] = useState(false);
   const [dmAttachedTrack, setDmAttachedTrack] = useState<MusicItem | null>(null);
@@ -401,6 +403,7 @@ export function ChatView({
   // If initialDirectFriend changes, switch active channel
   useEffect(() => {
     if (initialDirectFriend?.id) {
+      setDmLoading(true);
       setActiveChannel(initialDirectFriend.id);
       if (window.innerWidth < 1024 && window.history.state?.layer !== "chat-thread") {
         window.history.pushState(
@@ -464,7 +467,7 @@ export function ChatView({
         const data = await res.json();
         if (data.messages) setGlobalMessages(data.messages);
         if (typeof data.onlineCount === "number") setOnlineCount(data.onlineCount);
-      } catch {}
+      } catch {} finally { setGlobalLoading(false); }
   }
   useActivePolling(fetchGlobalMessages);
 
@@ -478,7 +481,7 @@ export function ChatView({
         if (data.messages) {
           setDmMessages(data.messages);
         }
-      } catch {}
+      } catch {} finally { setDmLoading(false); }
   }
   useActivePolling(fetchDmMessages, activeChannel !== "global");
 
@@ -711,7 +714,7 @@ export function ChatView({
   }
 
   return (
-    <div className="mx-3 flex h-[calc(100vh-160px)] max-w-6xl flex-col gap-4 rounded-3xl border border-[#303030] bg-[#0d0d0d] p-2 pb-3 animate-fadeIn select-none md:h-[calc(100vh-110px)] lg:mx-auto lg:flex-row lg:border-0 lg:bg-transparent lg:p-0">
+    <div className="mx-2 flex h-[calc(100dvh-152px-env(safe-area-inset-bottom))] min-h-0 min-w-0 max-w-6xl flex-col gap-3 rounded-3xl border border-[#303030] bg-[#0d0d0d] p-2 animate-fadeIn select-none sm:mx-3 md:h-[calc(100dvh-110px)] lg:mx-auto lg:flex-row lg:border-0 lg:bg-transparent lg:p-0">
       {/* ================================================================= */}
       {/* LEFT COLUMN: CONVERSATIONS LIST (Top: Global Chat, Below: Direct) */}
       {/* Minimalist green dot indicators without counters                   */}
@@ -882,16 +885,16 @@ export function ChatView({
       <div
         className={`${
           mobileShowList ? "hidden" : "flex"
-        } lg:flex flex-1 flex-col bg-[#141414] border border-[#343434] lg:border-white/5 rounded-2xl overflow-hidden shadow-2xl relative`}
+        } lg:flex min-h-0 min-w-0 flex-1 flex-col bg-[#141414] border border-[#343434] lg:border-white/5 rounded-2xl overflow-hidden shadow-2xl relative`}
       >
         {activeChannel === "global" ? (
           /* =============================================================== */
           /* 1. GLOBAL CHAT ROOM                                             */
           /* =============================================================== */
-          <div className="flex flex-col h-full p-3 sm:p-4">
+          <div className="flex min-h-0 min-w-0 flex-col h-full p-2 sm:p-4">
             {/* Header */}
-            <div className="p-3 bg-[#181818] border border-white/5 rounded-xl shadow mb-2 shrink-0 flex items-center justify-between">
-              <div className="flex items-center gap-3">
+            <div className="p-2.5 sm:p-3 bg-[#181818] border border-white/5 rounded-xl shadow mb-2 shrink-0 flex min-w-0 items-center justify-between gap-2">
+              <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                 <button
                   type="button"
                   onClick={closeMobileChannel}
@@ -903,20 +906,20 @@ export function ChatView({
                 <div className="w-9 h-9 rounded-full bg-[#1db954] text-black flex items-center justify-center font-bold shadow shrink-0">
                   <Radio size={18} />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <h2 className="text-sm sm:text-base font-black text-white">
+                    <h2 className="truncate text-sm sm:text-base font-black text-white">
                       Global Music Lounge
                     </h2>
                     <span className="w-2 h-2 rounded-full bg-[#1db954] animate-ping" />
                   </div>
-                  <span className="text-[11px] text-[#b3b3b3] block">
+                  <span className="block truncate text-[10px] text-[#b3b3b3] sm:text-[11px]">
                     Live worldwide music chat · Open for all listeners
                   </span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
                 <button
                   type="button"
                   onClick={toggleGlobalNotifications}
@@ -936,28 +939,24 @@ export function ChatView({
                   ) : (
                     <BellOff size={13} />
                   )}
-                  <span>{globalNotifsEnabled ? "Notifications On" : "Notifications Off"}</span>
+                  <span className="hidden sm:inline">{globalNotifsEnabled ? "Notifications On" : "Notifications Off"}</span>
                 </button>
 
                 <span className="px-3 py-1 bg-[#121212] border border-white/10 rounded-full text-[11px] font-bold text-[#1ed760] flex items-center gap-1.5 shadow-sm">
                   <span className="w-2 h-2 rounded-full bg-[#1db954] animate-pulse" />
-                  <span>{onlineCount} online</span>
+                  <span className="hidden sm:inline">{onlineCount} online</span>
+                  <span className="sm:hidden">{onlineCount}</span>
                 </span>
               </div>
             </div>
 
-            {/* Daily Topic Banner */}
-            <div className="px-3.5 py-2 bg-gradient-to-r from-purple-950/40 via-indigo-950/30 to-[#181818] border border-purple-500/20 rounded-xl mb-2 shrink-0 flex items-center gap-2 text-xs">
-              <Sparkles size={14} className="text-purple-400 shrink-0" />
-              <span className="text-[#b3b3b3] text-[11px]">
-                <strong className="text-white">Daily Topic:</strong> What track has been
-                stuck on repeat in your Sound Capsule? Search and share below!
-              </span>
-            </div>
-
             {/* Messages Stream */}
             <div className="flex-1 overflow-y-auto space-y-3 px-3 py-3 bg-[#111111] border border-white/5 rounded-xl">
-              {globalMessages.map((msg, idx) => {
+              {globalLoading ? (
+                <ChatLoading label="Loading Global Chat" />
+              ) : globalMessages.length === 0 ? (
+                <div className="flex h-full flex-col items-center justify-center p-6 text-center"><MessageSquare size={28} className="text-[#727272]" /><h3 className="mt-3 text-sm font-bold text-white">No messages yet</h3><p className="mt-1 text-xs text-[#727272]">Start the conversation with a song or a quick hello.</p></div>
+              ) : globalMessages.map((msg, idx) => {
                 const isMe = checkIfMeGlobal(msg);
                 const timeFormatted = new Date(msg.createdAt).toLocaleTimeString([], {
                   hour: "2-digit",
@@ -1184,7 +1183,7 @@ export function ChatView({
             {/* Input Bar */}
             <form
               onSubmit={handleSendGlobal}
-              className="mt-2.5 flex items-center gap-2 shrink-0"
+              className="mt-2.5 flex min-w-0 items-center gap-1.5 shrink-0 sm:gap-2"
             >
               <button
                 type="button"
@@ -1207,12 +1206,12 @@ export function ChatView({
                     ? "Add a note about this track..."
                     : "Say something in Global Chat or recommend a track..."
                 }
-                className="flex-1 px-4 py-2.5 text-xs sm:text-sm bg-[#1e1e1e] hover:bg-[#242424] focus:bg-[#1e1e1e] border border-white/5 focus:border-[#1db954] rounded-full text-white placeholder-[#727272] outline-none transition-all"
+                className="min-w-0 flex-1 px-3 py-2.5 text-xs sm:px-4 sm:text-sm bg-[#1e1e1e] hover:bg-[#242424] focus:bg-[#1e1e1e] border border-white/5 focus:border-[#1db954] rounded-full text-white placeholder-[#727272] outline-none transition-all"
               />
               <button
                 type="submit"
                 disabled={(!globalInputText.trim() && !globalAttachedTrack) || globalSending}
-                className="px-5 py-2.5 text-xs font-bold bg-[#1db954] hover:bg-[#1ed760] disabled:opacity-30 disabled:hover:bg-[#1db954] text-black rounded-full transition-all flex items-center gap-1.5 cursor-pointer shadow-lg shrink-0"
+                className="px-3 py-2.5 text-xs font-bold bg-[#1db954] hover:bg-[#1ed760] disabled:opacity-30 disabled:hover:bg-[#1db954] text-black rounded-full transition-all flex items-center gap-1.5 cursor-pointer shadow-lg shrink-0 sm:px-5"
               >
                 <span>Send</span>
                 <Send size={14} />
@@ -1343,7 +1342,9 @@ export function ChatView({
 
             {/* Direct Messages Stream */}
             <div className="flex-1 overflow-y-auto space-y-3 px-3 py-3 bg-[#111111] border border-white/5 rounded-xl">
-              {dmMessages.length === 0 ? (
+              {dmLoading ? (
+                <ChatLoading label="Loading conversation" />
+              ) : dmMessages.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3 select-none">
                   <div className="w-14 h-14 rounded-2xl bg-[#1db954]/15 border border-[#1db954]/30 flex items-center justify-center text-[#1db954]">
                     <MessageCircle size={28} />
@@ -1573,12 +1574,12 @@ export function ChatView({
                 value={dmInputText}
                 onChange={e => setDmInputText(e.target.value)}
                 placeholder={`Message @${selectedFriend?.username || "friend"}...`}
-                className="flex-1 px-4 py-2.5 text-xs sm:text-sm bg-[#1e1e1e] hover:bg-[#242424] focus:bg-[#1e1e1e] border border-white/5 focus:border-[#1db954] rounded-full text-white placeholder-[#727272] outline-none transition-all"
+                className="min-w-0 flex-1 px-3 py-2.5 text-xs sm:px-4 sm:text-sm bg-[#1e1e1e] hover:bg-[#242424] focus:bg-[#1e1e1e] border border-white/5 focus:border-[#1db954] rounded-full text-white placeholder-[#727272] outline-none transition-all"
               />
               <button
                 type="submit"
                 disabled={(!dmInputText.trim() && !dmAttachedTrack) || dmSending}
-                className="px-5 py-2.5 text-xs font-bold bg-[#1db954] hover:bg-[#1ed760] disabled:opacity-30 disabled:hover:bg-[#1db954] text-black rounded-full transition-all flex items-center gap-1.5 cursor-pointer shadow-lg shrink-0"
+                className="px-3 py-2.5 text-xs font-bold bg-[#1db954] hover:bg-[#1ed760] disabled:opacity-30 disabled:hover:bg-[#1db954] text-black rounded-full transition-all flex items-center gap-1.5 cursor-pointer shadow-lg shrink-0 sm:px-5"
               >
                 <span>Send</span>
                 <Send size={14} />
@@ -1589,4 +1590,8 @@ export function ChatView({
       </div>
     </div>
   );
+}
+
+function ChatLoading({ label }: { label: string }) {
+  return <div className="flex h-full min-h-48 flex-col items-center justify-center text-center"><LoaderCircle size={30} className="spin text-[#1ed760]" /><p className="mt-3 text-xs font-semibold text-[#b3b3b3]">{label}…</p></div>;
 }

@@ -8,6 +8,7 @@ import {
   Flag,
   Info,
   MessageCircle,
+  LoaderCircle,
   Send,
   ShieldOff,
   SkipForward,
@@ -253,6 +254,14 @@ export function MatchesView({
           </button>
         ))}
       </nav>
+
+      {!discovery && (
+        <section className="flex min-h-[320px] flex-col items-center justify-center rounded-3xl border border-white/10 bg-[#141414] p-8 text-center">
+          <LoaderCircle className="spin text-[#1ed760]" size={32} />
+          <h2 className="mt-4 text-lg font-black text-white">Finding your music matches</h2>
+          <p className="mt-1 text-sm text-[#727272]">Comparing listening history and shared taste…</p>
+        </section>
+      )}
 
       {discovery?.locked && tab === "discover" && (
         <section className="relative min-h-[430px] overflow-hidden rounded-3xl border border-white/10 bg-[#141414]">
