@@ -25,6 +25,7 @@ import {
   Radio,
   ShieldAlert,
   CircleHelp,
+  Download,
 } from "lucide-react";
 import { auth, googleProvider, isFirebaseConfigured } from "@/lib/firebase";
 import {
@@ -61,6 +62,11 @@ import { MatchesView } from "@/components/MatchesDiscoveryView";
 import { authenticatedFetch } from "@/lib/client-api";
 import { useActivePolling } from "@/hooks/use-active-polling";
 
+interface InstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [account, setAccount] = useState<AccountData>({ profile: null, music: emptyMusic() });
@@ -86,6 +92,9 @@ export default function Home() {
     "favorites" | "lastfm" | "spotify" | null
   >(null);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
+  const [showInstallOption, setShowInstallOption] = useState(false);
+  const [isIosBrowser, setIsIosBrowser] = useState(false);
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
   const [unreadChatUserIds, setUnreadChatUserIds] = useState<string[]>([]);
   const [incomingToast, setIncomingToast] = useState<{
@@ -104,6 +113,38 @@ export default function Home() {
   const lastfmUsername = account.music.lastfm?.username;
 
   const autoSynced = useRef("");
+
+  useEffect(() => {
+    const standalone = window.matchMedia("(display-mode: standalone)").matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    setIsIosBrowser(ios);
+    setShowInstallOption(!standalone && ios);
+    const handleInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as InstallPromptEvent);
+      setShowInstallOption(true);
+    };
+    const handleInstalled = () => { setInstallPrompt(null); setShowInstallOption(false); };
+    window.addEventListener("beforeinstallprompt", handleInstallPrompt);
+    window.addEventListener("appinstalled", handleInstalled);
+    if ("serviceWorker" in navigator) void navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleInstallPrompt);
+      window.removeEventListener("appinstalled", handleInstalled);
+    };
+  }, []);
+
+  async function installWebApp() {
+    setShowProfileDropdown(false);
+    if (installPrompt) {
+      await installPrompt.prompt();
+      const choice = await installPrompt.userChoice;
+      if (choice.outcome === "accepted") setShowInstallOption(false);
+      setInstallPrompt(null);
+      return;
+    }
+    if (isIosBrowser) window.alert("To install SpotiMatch, tap the Share button in Safari, then choose “Add to Home Screen”.");
+  }
 
   // Auth & Account State
   useEffect(() => {
@@ -536,7 +577,7 @@ export default function Home() {
   }
 
   return (
-    <div className="h-screen w-screen bg-black text-white font-sans overflow-hidden flex flex-col select-none">
+    <div className="h-[100dvh] w-screen bg-black text-white font-sans overflow-hidden flex flex-col select-none">
       {/* Top Navigation Bar */}
       <nav className="h-16 shrink-0 bg-black/95 md:bg-black border-b border-white/10 flex items-center justify-between px-4 md:px-6 relative z-30 backdrop-blur-xl">
         <div className="flex items-center gap-4">
@@ -654,6 +695,11 @@ export default function Home() {
                       >
                         <Settings2 size={14} /> Account settings
                       </button>
+                      {showInstallOption && (
+                        <button onClick={() => void installWebApp()} className="w-full px-4 py-2 text-left hover:bg-[#383838] flex items-center gap-2">
+                          <Download size={14} /> Install web app
+                        </button>
+                      )}
                       {user?.emailVerified && user.email?.toLowerCase() === "sohanmutra28@gmail.com" && (
                         <button
                           onClick={() => {
@@ -894,7 +940,7 @@ export default function Home() {
       {/* ================================================================= */}
       {/* MAIN CONTENT AREA */}
       {/* ================================================================= */}
-      <main className="flex-1 min-w-0 w-full overflow-y-auto overflow-x-hidden relative scroll-smooth bg-black">
+      <main className="flex-1 min-h-0 min-w-0 w-full overflow-y-auto overflow-x-hidden relative scroll-smooth bg-black pb-[calc(72px+env(safe-area-inset-bottom))] md:pb-0">
         <div className="w-full min-w-0 max-w-[1400px] mx-auto min-h-full flex flex-col">
           {activeTab === "home" && (
             <HomeView
@@ -966,7 +1012,7 @@ export default function Home() {
       {/* BOTTOM NAVIGATION BAR */}
       {/* ================================================================= */}
       {loggedIn && account.profile && (
-        <nav className="md:hidden h-[72px] bg-[#121212]/95 border-t border-white/10 flex items-center justify-around px-2 shrink-0 z-40 pb-safe backdrop-blur-xl shadow-[0_-8px_24px_rgba(0,0,0,0.35)]">
+        <nav className="fixed inset-x-0 bottom-0 md:hidden min-h-[72px] bg-[#121212]/95 border-t border-white/10 flex items-center justify-around px-2 pt-1 pb-[max(env(safe-area-inset-bottom),0.5rem)] z-40 backdrop-blur-xl shadow-[0_-8px_24px_rgba(0,0,0,0.35)]">
           <button onClick={() => navigateTo("home")} className={`flex min-w-14 flex-col items-center gap-1 rounded-xl px-2 py-1.5 transition-colors ${activeTab === "home" ? "bg-white/10 text-white" : "text-[#a7a7a7] hover:text-white"}`}>
             <HomeIcon size={20} className={activeTab === "home" ? "fill-current" : ""} />
             <span className="text-[10px] font-medium">Home</span>

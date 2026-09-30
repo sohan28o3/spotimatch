@@ -1,0 +1,14 @@
+{
+  "name": "SpotiMatch — Your music, your people",
+  "short_name": "SpotiMatch",
+  "description": "Find music friends through real listening history.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#121212",
+  "icons": [
+    { "src": "/app-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/app-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
