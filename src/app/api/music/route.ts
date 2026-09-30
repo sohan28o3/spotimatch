@@ -1,5 +1,6 @@
 import { admin, ApiError, failure, json, readBody, requireUser } from "@/lib/server";
 import { validateImport, validateItems } from "@/lib/music";
+import { notifyCompatibleListeners } from "@/lib/match-notifications";
 
 export async function PUT(request: Request) {
   try {
@@ -13,6 +14,7 @@ export async function PUT(request: Request) {
       else throw new Error("Unknown music source.");
     } catch (error) { throw new ApiError(error instanceof Error ? error.message : "Invalid music data."); }
     await db.doc(`music/${user.uid}`).set(update, { merge: true });
+    if (body.source === "spotify" && body.snapshot !== null) await notifyCompatibleListeners(user.uid);
     return json(update);
   } catch (error) { return failure(error); }
 }

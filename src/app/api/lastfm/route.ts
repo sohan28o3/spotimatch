@@ -1,5 +1,6 @@
 import { admin, ApiError, failure, json, requireUser, throttle } from "@/lib/server";
 import { getLiveLastfm, musicSnapshot } from "@/lib/lastfm";
+import { notifyCompatibleListeners } from "@/lib/match-notifications";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -84,6 +85,8 @@ export async function POST(request: Request) {
       }
       tx.update(db.doc(`music/${user.uid}`), updates);
     });
+
+    await notifyCompatibleListeners(user.uid);
 
     return json({ snapshot, live });
   } catch (error) {

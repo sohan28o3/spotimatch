@@ -28,6 +28,8 @@ interface DiscoveryResponse {
   sourceCount: number;
   day: string;
   matches: TasteMatch[];
+  dailyTotal?: number;
+  limitedSupply?: boolean;
   previousMatches?: TasteMatch[];
 }
 
@@ -278,6 +280,13 @@ export function MatchesView({
         </div>
       )}
 
+      {tab === "discover" && !discovery?.locked && Boolean(discovery?.matches.length) && discovery?.limitedSupply && (
+        <div className="flex gap-3 rounded-2xl border border-[#1db954]/25 bg-[#1db954]/10 p-4 text-sm text-[#d8fce5]">
+          <Users className="mt-0.5 shrink-0 text-[#1ed760]" size={17} />
+          <div><strong>More listeners are joining.</strong><p className="mt-1 text-xs leading-5 text-[#b3d9c1]">These are the compatible profiles available right now. We&apos;ll add more matches as new listeners finish setting up.</p></div>
+        </div>
+      )}
+
       {tab === "discover" && !discovery?.locked && groups.map(([section, items]) => (
         <section key={section} className="space-y-3">
           <div><h2 className="text-xl font-black text-white">{sectionLabels[section]}</h2><p className="text-xs text-[#727272]">Chosen by the strongest reason you connect.</p></div>
@@ -304,8 +313,8 @@ export function MatchesView({
 
       {tab === "discover" && !discovery?.locked && discovery?.matches.length === 0 && (
         <section className="rounded-3xl border border-white/10 bg-[#141414] p-8 text-center md:p-12">
-          <Clock className="mx-auto text-[#1db954]" size={30} /><h2 className="mt-4 text-2xl font-black text-white">You&apos;re caught up for today</h2><p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#b3b3b3]">We found fewer, higher-quality matches instead of filling your page with weak recommendations. New matches arrive tomorrow.</p>
-          <div className="mt-6 flex flex-col justify-center gap-2 sm:flex-row"><button onClick={() => onNavigate("chat")} className="rounded-full bg-[#1db954] px-5 py-2.5 text-sm font-black text-black">Open Global Chat</button><button onClick={() => setTab("previous")} className="rounded-full border border-white/15 px-5 py-2.5 text-sm font-bold text-white">Revisit previous matches</button></div>
+          <Clock className="mx-auto text-[#1db954]" size={30} /><h2 className="mt-4 text-2xl font-black text-white">You&apos;re caught up for now</h2><p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#b3b3b3]">Waiting for more listeners to join and generate new matches. We&apos;ll notify you when someone compatible becomes available.</p>
+          <div className="mt-6 flex flex-col justify-center gap-2 sm:flex-row"><button onClick={() => onNavigate("chat")} className="rounded-full bg-[#1db954] px-5 py-2.5 text-sm font-black text-black">Open Global Chat</button>{Boolean(discovery?.previousMatches?.length) && <button onClick={() => setTab("previous")} className="rounded-full border border-white/15 px-5 py-2.5 text-sm font-bold text-white">Review skipped profiles</button>}</div>
         </section>
       )}
 

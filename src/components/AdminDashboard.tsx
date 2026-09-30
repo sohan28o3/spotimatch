@@ -1,135 +1,78 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { AlertTriangle, Check, FileWarning, MessageCircle, RefreshCw, Search, Shield, Trash2, Users } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Activity, Check, ChevronDown, FileWarning, Filter, MessageCircle, RefreshCw, Search, Shield, Trash2, UserRoundPlus, Users } from "lucide-react";
 import { authenticatedFetch } from "@/lib/client-api";
 
-type AdminTab = "overview" | "users" | "chat" | "reports" | "audit";
-interface AdminUser { uid: string; displayName: string; username: string; email: string; photoURL: string; createdAt: string | null; hasSpotify: boolean; hasLastfm: boolean }
+type AdminTab = "overview" | "users" | "requests" | "chat" | "reports" | "activity" | "audit";
+type Row = Record<string, unknown> & { id: string };
+interface AdminUser { uid: string; displayName: string; username: string; email: string; photoURL: string; createdAt: string | null; hasSpotify: boolean; hasLastfm: boolean; friendCount: number; pendingCount: number; blockedCount: number }
 interface AdminData {
-  summary: { users: number; connectedListeners: number; openReports: number; globalMessages: number; directThreads: number };
-  users: AdminUser[];
-  reports: Array<Record<string, unknown> & { id: string }>;
-  messages: Array<Record<string, unknown> & { id: string }>;
-  directThreads: Array<Record<string, unknown> & { id: string }>;
-  auditLog: Array<Record<string, unknown> & { id: string }>;
+  summary: { users: number; connectedListeners: number; openReports: number; globalMessages: number; directThreads: number; pendingRequests: number };
+  users: AdminUser[]; reports: Row[]; messages: Row[]; directThreads: Row[]; friendRequests: Row[]; activityLog: Row[]; auditLog: Row[];
 }
 
+const tabs: Array<[AdminTab, string]> = [["overview", "Overview"], ["users", "Users"], ["requests", "Requests"], ["chat", "Chats"], ["reports", "Reports"], ["activity", "Activity"], ["audit", "Admin log"]];
+const dateText = (value: unknown) => { const date = new Date(String(value || "")); return Number.isNaN(date.getTime()) ? "Time unavailable" : date.toLocaleString(); };
+
 export function AdminDashboard() {
-  const [error, setError] = useState("");
-  const [toggles, setToggles] = useState<{ friendRequests: boolean; discovery: boolean; globalChat: boolean }>({
-    friendRequests: true,
-    discovery: true,
-    globalChat: true,
-  });
-
-  // Update toggle on server
-  const updateToggle = useCallback(async (name: keyof typeof toggles, value: boolean) => {
-    try {
-      const response = await authenticatedFetch('/api/admin/toggles', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, value }),
-      });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || 'Unable to update toggle');
-      setToggles((prev) => ({ ...prev, [name]: value }));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to update toggle');
-    }
-  }, []);
-
-  const [data, setData] = useState<AdminData | null>(null);
-  const [tab, setTab] = useState<AdminTab>("overview");
-  const [query, setQuery] = useState("");
-  const [busy, setBusy] = useState("");
-
+  const [data, setData] = useState<AdminData | null>(null), [tab, setTab] = useState<AdminTab>("overview"), [query, setQuery] = useState(""), [filter, setFilter] = useState("all"), [busy, setBusy] = useState(""), [error, setError] = useState(""), [expandedThread, setExpandedThread] = useState("");
+  const [toggles, setToggles] = useState({ friendRequests: true, discovery: true, globalChat: true });
   const load = useCallback(async () => {
     setError("");
-    const [response, togglesRes] = await Promise.all([
-      authenticatedFetch("/api/admin"),
-      authenticatedFetch("/api/admin/toggles")
-    ]);
+    const [response, togglesResponse] = await Promise.all([authenticatedFetch("/api/admin"), authenticatedFetch("/api/admin/toggles")]);
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || "Unable to load administrator data.");
     setData(payload);
-
-    if (togglesRes.ok) {
-      const tPayload = await togglesRes.json();
-      setToggles({
-        friendRequests: tPayload.friendRequests !== undefined ? Boolean(tPayload.friendRequests) : true,
-        discovery: tPayload.discovery !== undefined ? Boolean(tPayload.discovery) : true,
-        globalChat: tPayload.globalChat !== undefined ? Boolean(tPayload.globalChat) : true,
-      });
-    }
+    if (togglesResponse.ok) { const flags = await togglesResponse.json(); setToggles({ friendRequests: flags.friendRequests !== false, discovery: flags.discovery !== false, globalChat: flags.globalChat !== false }); }
   }, []);
+  useEffect(() => { void load().catch(reason => setError(reason instanceof Error ? reason.message : "Unable to load dashboard.")); }, [load]);
 
-  useEffect(() => {
-    void load().catch(error => setError(error instanceof Error ? error.message : "Unable to load dashboard."));
-  }, [load]);
-
-  async function act(action: string, targetId: string, prompt: string) {
-    if (!window.confirm(prompt)) return;
-    setBusy(`${action}:${targetId}`);
-    setError("");
-    const response = await authenticatedFetch("/api/admin", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, targetId }),
-    });
-    const payload = await response.json();
+  async function updateToggle(name: keyof typeof toggles, value: boolean) {
+    setBusy(`toggle:${name}`);
+    const response = await authenticatedFetch("/api/admin/toggles", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, value }) });
     setBusy("");
-    if (!response.ok) {
-      setError(payload.error || "Administrator action failed.");
-      return;
-    }
+    if (!response.ok) { const payload = await response.json(); setError(payload.error || "Unable to update feature."); return; }
+    setToggles(current => ({ ...current, [name]: value }));
+  }
+  async function act(action: string, targetId: string, prompt: string, secondaryId?: string) {
+    if (!window.confirm(prompt)) return;
+    setBusy(`${action}:${targetId}`); setError("");
+    const response = await authenticatedFetch("/api/admin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, targetId, secondaryId }) });
+    const payload = await response.json(); setBusy("");
+    if (!response.ok) { setError(payload.error || "Administrator action failed."); return; }
     await load();
   }
-
-  const filteredUsers = useMemo(() => {
-    const value = query.toLowerCase().trim();
-    if (!value) return data?.users || [];
-    return (data?.users || []).filter(user => `${user.displayName} ${user.username} ${user.email} ${user.uid}`.toLowerCase().includes(value));
-  }, [data?.users, query]);
-
+  const search = query.trim().toLowerCase();
+  const filteredUsers = useMemo(() => (data?.users || []).filter(user => !search || `${user.displayName} ${user.username} ${user.email} ${user.uid}`.toLowerCase().includes(search)), [data?.users, search]);
+  const filteredActivity = useMemo(() => (data?.activityLog || []).filter(item => (filter === "all" || String(item.kind || "").includes(filter)) && (!search || JSON.stringify(item).toLowerCase().includes(search))), [data?.activityLog, filter, search]);
   if (!data && !error) return <AdminSkeleton />;
 
-  return (
-    <div className="mx-auto w-full max-w-7xl space-y-6 px-4 pb-24 pt-5 md:px-8 md:pt-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div><p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-rose-300"><Shield size={14} />Restricted administration</p><h1 className="mt-1 text-3xl font-black text-white md:text-4xl">SpotiMatch Control Room</h1><p className="mt-2 text-sm text-[#b3b3b3]">Users, conversations, reports, and moderation activity.</p></div>
-        <button onClick={() => void load()} className="flex items-center gap-2 rounded-full border border-white/10 bg-[#181818] px-4 py-2 text-xs font-bold text-white"><RefreshCw size={14} />Refresh</button>
-      </header>
-      {error && <div className="rounded-xl border border-rose-400/30 bg-rose-400/10 p-4 text-sm text-rose-200">{error}</div>}
-      <div className="mt-4 flex flex-wrap gap-4">
-  {Object.entries(toggles).map(([key, value]) => (
-    <div key={key} className="flex items-center">
-      <span className="capitalize text-sm text-[#b3b3b3]">{key.replace(/([A-Z])/g, ' $1')}</span>
-      <button
-        onClick={() => updateToggle(key as any, !value)}
-        className={`ml-2 rounded px-2 py-1 text-xs font-bold ${value ? 'bg-green-600 text-white' : 'bg-gray-600 text-white'}`}
-      >
-        {value ? 'On' : 'Off'}
-      </button>
-    </div>
-  ))}
-</div>
+  return <div className="mx-auto w-full max-w-7xl space-y-5 px-4 pb-24 pt-5 md:px-8 md:pt-8">
+    <header className="flex flex-wrap items-end justify-between gap-4"><div><p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-rose-300"><Shield size={14} />Restricted administration</p><h1 className="mt-1 text-3xl font-black text-white md:text-4xl">SpotiMatch Control Room</h1><p className="mt-2 text-sm text-[#b3b3b3]">Moderation data is sensitive. Inspect it only when needed for safety and support.</p></div><button onClick={() => void load()} className="flex items-center gap-2 rounded-full border border-white/10 bg-[#181818] px-4 py-2 text-xs font-bold text-white"><RefreshCw size={14} />Refresh</button></header>
+    {error && <div className="rounded-xl border border-rose-400/30 bg-rose-400/10 p-4 text-sm text-rose-200">{error}</div>}
+    <section className="grid gap-3 sm:grid-cols-3">{(Object.entries(toggles) as Array<[keyof typeof toggles, boolean]>).map(([key, value]) => <div key={key} className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#181818] p-4"><div><p className="text-sm font-bold capitalize text-white">{key.replace(/([A-Z])/g, " $1")}</p><p className="mt-1 text-xs text-[#727272]">Available to all users</p></div><button disabled={busy === `toggle:${key}`} onClick={() => void updateToggle(key, !value)} className={`relative h-7 w-12 rounded-full transition ${value ? "bg-[#1db954]" : "bg-[#4a4a4a]"}`} aria-label={`Turn ${key} ${value ? "off" : "on"}`}><span className={`absolute top-1 h-5 w-5 rounded-full bg-white transition ${value ? "left-6" : "left-1"}`} /></button></div>)}</section>
+    <nav className="no-scrollbar flex gap-2 overflow-x-auto border-b border-white/10 pb-3">{tabs.map(([value, label]) => <button key={value} onClick={() => { setTab(value); setQuery(""); setFilter("all"); }} className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold ${tab === value ? "bg-white text-black" : "border border-white/10 bg-[#181818] text-[#b3b3b3]"}`}>{label}</button>)}</nav>
 
-      {tab === "overview" && data && <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">{[
-        ["Registered users", data.summary.users, Users], ["Connected listeners", data.summary.connectedListeners, Check], ["Open reports", data.summary.openReports, FileWarning], ["Recent global messages", data.summary.globalMessages, MessageCircle], ["Direct threads", data.summary.directThreads, MessageCircle],
-      ].map(([label, count, Icon]) => { const MetricIcon = Icon as typeof Users; return <div key={String(label)} className="rounded-2xl border border-white/10 bg-[#181818] p-5"><MetricIcon size={18} className="text-[#1db954]" /><p className="mt-4 text-3xl font-black text-white">{String(count)}</p><p className="mt-1 text-xs text-[#727272]">{String(label)}</p></div>; })}</div>}
+    {tab === "overview" && data && <><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{[["Registered users", data.summary.users, Users], ["Connected listeners", data.summary.connectedListeners, Check], ["Pending requests", data.summary.pendingRequests, UserRoundPlus], ["Open reports", data.summary.openReports, FileWarning], ["Recent global messages", data.summary.globalMessages, MessageCircle], ["Direct threads", data.summary.directThreads, MessageCircle]].map(([label, count, Icon]) => { const MetricIcon = Icon as typeof Users; return <div key={String(label)} className="rounded-2xl border border-white/10 bg-[#181818] p-5"><MetricIcon size={18} className="text-[#1db954]" /><p className="mt-4 text-3xl font-black text-white">{String(count)}</p><p className="mt-1 text-xs text-[#727272]">{String(label)}</p></div>; })}</div><Panel title="Recent important activity">{(data.activityLog || []).slice(0, 8).map(item => <ActivityRow key={item.id} item={item} />)}</Panel></>}
 
-      {tab === "users" && data && <section className="space-y-3"><div className="relative"><Search className="absolute left-3 top-3 text-[#727272]" size={15} /><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search name, username, email, or UID" className="w-full rounded-xl border border-white/10 bg-[#181818] py-2.5 pl-10 pr-4 text-sm text-white outline-none focus:border-[#1db954]" /></div>{filteredUsers.map(user => <article key={user.uid} className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-[#181818] p-4 md:flex-row md:items-center"><div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#282828] text-xs font-black text-[#1ed760]">{user.photoURL ? <img src={user.photoURL} alt="" className="h-full w-full object-cover" /> : user.displayName.slice(0, 2).toUpperCase()}</div><div className="min-w-0 flex-1"><p className="truncate font-bold text-white">{user.displayName} <span className="font-normal text-[#727272]">@{user.username}</span></p><p className="truncate text-xs text-[#727272]">{user.email || user.uid}</p></div><div className="flex gap-2 text-[10px] font-bold"><span className={`rounded-full px-2 py-1 ${user.hasLastfm ? "bg-red-500/15 text-red-300" : "bg-white/5 text-[#555]"}`}>Last.fm</span><span className={`rounded-full px-2 py-1 ${user.hasSpotify ? "bg-[#1db954]/15 text-[#1ed760]" : "bg-white/5 text-[#555]"}`}>Spotify</span></div><button disabled={busy.endsWith(user.uid)} onClick={() => void act("delete_user", user.uid, `Permanently delete ${user.displayName}, their account data, friendships, and direct messages? This cannot be undone.`)} className="flex items-center justify-center gap-2 rounded-full border border-rose-400/25 px-4 py-2 text-xs font-bold text-rose-300 hover:bg-rose-400/10"><Trash2 size={14} />Delete user</button></article>)}</section>}
+    {tab === "users" && data && <section className="space-y-3"><SearchBox value={query} onChange={setQuery} placeholder="Search name, username, email, or UID" />{filteredUsers.map(user => <article key={user.uid} className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-[#181818] p-4 md:flex-row md:items-center"><div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#282828] text-xs font-black text-[#1ed760]">{user.photoURL ? <img src={user.photoURL} alt="" className="h-full w-full object-cover" /> : user.displayName.slice(0, 2).toUpperCase()}</div><div className="min-w-0 flex-1"><p className="truncate font-bold text-white">{user.displayName} <span className="font-normal text-[#727272]">@{user.username}</span></p><p className="truncate text-xs text-[#727272]">{user.email || user.uid}</p><p className="mt-1 text-[11px] text-[#8b8b8b]">{user.friendCount} friends · {user.pendingCount} requests · {user.blockedCount} blocked</p></div><div className="flex gap-2 text-[10px] font-bold"><Badge active={user.hasLastfm} label="Last.fm" /><Badge active={user.hasSpotify} label="Spotify" /></div><button disabled={busy.endsWith(user.uid)} onClick={() => void act("delete_user", user.uid, `Permanently delete ${user.displayName}, their authentication account, listening data, messages, friendships, requests, reports, and match data? This cannot be undone.`)} className="flex items-center justify-center gap-2 rounded-full border border-rose-400/25 px-4 py-2 text-xs font-bold text-rose-300"><Trash2 size={14} />Delete all data</button></article>)}</section>}
 
-      {tab === "chat" && data && <div className="grid gap-5 lg:grid-cols-2"><ModerationList title="Global messages" empty="No global messages found.">{data.messages.map(message => <ModerationRow key={message.id} title={String(message.name || message.username || "Listener")} detail={String(message.text || "Attachment or empty message")} meta={String(message.createdAt || "")} actionLabel="Delete" busy={busy.endsWith(message.id)} onAction={() => void act("delete_global_message", message.id, "Delete this global message permanently?")} />)}</ModerationList><ModerationList title="Direct-message threads" empty="No direct-message threads found.">{data.directThreads.map(thread => <ModerationRow key={thread.id} title={(thread.participantNames as string[] | undefined)?.join(" ↔ ") || thread.id} detail={String(thread.lastMessage || "Direct conversation")} meta={String(thread.updatedAt || "")} actionLabel="Delete thread" busy={busy.endsWith(thread.id)} onAction={() => void act("delete_dm_thread", thread.id, "Delete this entire direct-message thread and every message inside it?")} />)}</ModerationList></div>}
+    {tab === "requests" && data && <Panel title="Pending friend requests">{data.friendRequests.length ? data.friendRequests.map(request => <article key={request.id} className="rounded-2xl border border-white/10 bg-[#181818] p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-sm font-bold text-white">{String(request.fromName)} <span className="text-[#727272]">→</span> {String(request.toName)}</p><p className="mt-1 text-xs text-[#1ed760]">{String(request.matchScore)}% taste match</p>{Boolean(request.message) && <p className="mt-2 rounded-xl bg-black/25 p-3 text-sm text-[#d6d6d6]">“{String(request.message)}”</p>}<p className="mt-2 text-[10px] text-[#727272]">{dateText(request.createdAt)}</p></div><button disabled={busy.endsWith(String(request.toUserId))} onClick={() => void act("remove_friend_request", String(request.toUserId), "Remove this pending friend request from both accounts?", String(request.fromUserId))} className="rounded-full border border-rose-400/25 px-3 py-1.5 text-xs font-bold text-rose-300">Remove request</button></div></article>) : <Empty text="No pending friend requests." />}</Panel>}
 
-      {tab === "reports" && data && <ModerationList title="Match reports" empty="No reports have been submitted.">{data.reports.map(report => <ModerationRow key={report.id} title={`Reported user: ${String(report.candidateId || "Unknown")}`} detail={`Reporter: ${String(report.reporterId || "Unknown")} · Status: ${String(report.status || "open")}`} meta={String(report.day || "")} actionLabel="Resolve" busy={busy.endsWith(report.id)} secondaryAction={() => void act("dismiss_report", report.id, "Dismiss this report?")} onAction={() => void act("resolve_report", report.id, "Mark this report as resolved?")} />)}</ModerationList>}
+    {tab === "chat" && data && <div className="grid gap-5 xl:grid-cols-2"><Panel title="Global chat">{data.messages.length ? data.messages.map(message => <MessageRow key={message.id} name={`${String(message.name || "Listener")} (@${String(message.username || "listener")})`} text={String(message.text || "Shared an attachment")} time={message.createdAt} onDelete={() => void act("delete_global_message", message.id, "Delete this global-chat message permanently?")} />) : <Empty text="No global messages." />}</Panel><Panel title="Direct conversations">{data.directThreads.length ? data.directThreads.map(thread => <article key={thread.id} className="overflow-hidden rounded-2xl border border-white/10 bg-[#181818]"><button onClick={() => setExpandedThread(current => current === thread.id ? "" : thread.id)} className="flex w-full items-center gap-3 p-4 text-left"><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold text-white">{(thread.participantNames as string[] | undefined)?.join(" ↔ ") || thread.id}</p><p className="mt-1 truncate text-xs text-[#b3b3b3]">{String(thread.lastMessage || "No messages")}</p><p className="mt-1 text-[10px] text-[#727272]">{dateText(thread.lastMessageAt)}</p></div><ChevronDown size={16} className={`text-[#727272] transition ${expandedThread === thread.id ? "rotate-180" : ""}`} /></button>{expandedThread === thread.id && <div className="border-t border-white/10 p-4"><div className="max-h-80 space-y-2 overflow-y-auto">{((thread.messages || []) as Row[]).map(message => <div key={message.id} className="rounded-xl bg-black/30 p-3"><p className="text-xs font-bold text-[#1ed760]">{String(message.senderName || message.senderUsername || message.senderId || "Listener")}</p><p className="mt-1 whitespace-pre-wrap break-words text-sm text-white">{String(message.text || "Shared an attachment")}</p><p className="mt-1 text-[10px] text-[#727272]">{dateText(message.createdAt)}</p></div>)}</div><button disabled={busy.endsWith(thread.id)} onClick={() => void act("delete_dm_thread", thread.id, "Delete this entire direct conversation and all its messages permanently?")} className="mt-4 flex items-center gap-2 rounded-full border border-rose-400/25 px-4 py-2 text-xs font-bold text-rose-300"><Trash2 size={13} />Delete conversation</button></div>}</article>) : <Empty text="No direct conversations." />}</Panel></div>}
 
-      {tab === "audit" && data && <ModerationList title="Administrator audit log" empty="No administrator actions recorded.">{data.auditLog.map(entry => <ModerationRow key={entry.id} title={String(entry.action || "Action").replaceAll("_", " ")} detail={`Target: ${String(entry.targetId || "Unknown")}`} meta={String(entry.createdAt || "")} />)}</ModerationList>}
-    </div>
-  );
+    {tab === "reports" && data && <Panel title="Match reports">{data.reports.length ? data.reports.map(report => <article key={report.id} className="rounded-2xl border border-white/10 bg-[#181818] p-4"><p className="text-sm font-bold text-white">Reported: {String(report.candidateId || "Unknown")}</p><p className="mt-1 text-xs text-[#b3b3b3]">By {String(report.reporterId || "Unknown")} · {String(report.status || "open")}</p><div className="mt-3 flex gap-3"><button onClick={() => void act("resolve_report", report.id, "Mark this report as resolved?")} className="text-xs font-bold text-[#1ed760]">Resolve</button><button onClick={() => void act("dismiss_report", report.id, "Dismiss this report?")} className="text-xs font-bold text-[#b3b3b3]">Dismiss</button></div></article>) : <Empty text="No reports." />}</Panel>}
+
+    {tab === "activity" && data && <section className="space-y-3"><div className="grid gap-2 sm:grid-cols-[1fr_auto]"><SearchBox value={query} onChange={setQuery} placeholder="Search people or activity" /><label className="flex items-center gap-2 rounded-xl border border-white/10 bg-[#181818] px-3"><Filter size={14} className="text-[#727272]" /><select value={filter} onChange={event => setFilter(event.target.value)} className="bg-transparent py-2.5 text-xs text-white outline-none"><option value="all">All actions</option><option value="friend_request">Friend requests</option><option value="message">Messages</option><option value="blocked">Blocks</option><option value="friend_removed">Removed friends</option></select></label></div><Panel title={`${filteredActivity.length} activity events`}>{filteredActivity.length ? filteredActivity.map(item => <ActivityRow key={item.id} item={item} />) : <Empty text="No activity matches these filters." />}</Panel></section>}
+    {tab === "audit" && data && <Panel title="Administrator audit log">{data.auditLog.length ? data.auditLog.map(item => <ActivityRow key={item.id} item={{ ...item, kind: item.action, actorName: `Admin ${String(item.adminUid || "")}`, targetName: item.targetId }} />) : <Empty text="No administrator actions recorded." />}</Panel>}
+  </div>;
 }
 
-function ModerationList({ title, empty, children }: { title: string; empty: string; children: ReactNode[] }) { return <section className="space-y-3"><h2 className="text-lg font-black text-white">{title}</h2>{children.length ? children : <div className="rounded-2xl border border-dashed border-white/10 p-8 text-center text-sm text-[#727272]">{empty}</div>}</section>; }
-function ModerationRow({ title, detail, meta, actionLabel, busy, onAction, secondaryAction }: { title: string; detail: string; meta: string; actionLabel?: string; busy?: boolean; onAction?: () => void; secondaryAction?: () => void }) { return <article className="rounded-2xl border border-white/10 bg-[#181818] p-4"><div className="flex items-start gap-3"><AlertTriangle size={15} className="mt-0.5 shrink-0 text-amber-300" /><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold capitalize text-white">{title}</p><p className="mt-1 line-clamp-2 text-xs text-[#b3b3b3]">{detail}</p><p className="mt-2 text-[10px] text-[#555]">{meta}</p></div>{secondaryAction && <button onClick={secondaryAction} className="text-xs font-bold text-[#b3b3b3]">Dismiss</button>}{onAction && <button disabled={busy} onClick={onAction} className="rounded-full border border-rose-400/25 px-3 py-1.5 text-xs font-bold text-rose-300">{actionLabel}</button>}</div></article>; }
-function AdminSkeleton() { return <div className="mx-auto max-w-7xl space-y-5 px-4 py-8 md:px-8"><div className="h-20 animate-pulse rounded-2xl bg-[#181818]" /><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">{[1,2,3,4,5].map(item => <div key={item} className="h-32 animate-pulse rounded-2xl bg-[#181818]" />)}</div><div className="h-72 animate-pulse rounded-3xl bg-[#181818]" /></div>; }
+function Panel({ title, children }: { title: string; children: React.ReactNode }) { return <section className="space-y-3"><h2 className="text-lg font-black text-white">{title}</h2>{children}</section>; }
+function SearchBox({ value, onChange, placeholder }: { value: string; onChange: (value: string) => void; placeholder: string }) { return <div className="relative"><Search className="absolute left-3 top-3 text-[#727272]" size={15} /><input value={value} onChange={event => onChange(event.target.value)} placeholder={placeholder} className="w-full rounded-xl border border-white/10 bg-[#181818] py-2.5 pl-10 pr-4 text-sm text-white outline-none focus:border-[#1db954]" /></div>; }
+function Badge({ active, label }: { active: boolean; label: string }) { return <span className={`rounded-full px-2 py-1 ${active ? "bg-[#1db954]/15 text-[#1ed760]" : "bg-white/5 text-[#555]"}`}>{label}</span>; }
+function Empty({ text }: { text: string }) { return <div className="rounded-2xl border border-dashed border-white/10 p-8 text-center text-sm text-[#727272]">{text}</div>; }
+function MessageRow({ name, text, time, onDelete }: { name: string; text: string; time: unknown; onDelete: () => void }) { return <article className="flex items-start gap-3 rounded-2xl border border-white/10 bg-[#181818] p-4"><MessageCircle size={15} className="mt-0.5 shrink-0 text-[#1ed760]" /><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold text-white">{name}</p><p className="mt-1 whitespace-pre-wrap break-words text-xs text-[#b3b3b3]">{text}</p><p className="mt-2 text-[10px] text-[#727272]">{dateText(time)}</p></div><button onClick={onDelete} className="rounded-full border border-rose-400/25 p-2 text-rose-300" aria-label="Delete message"><Trash2 size={13} /></button></article>; }
+function ActivityRow({ item }: { item: Row }) { return <article className="flex items-start gap-3 rounded-2xl border border-white/10 bg-[#181818] p-4"><Activity size={15} className="mt-0.5 shrink-0 text-[#1ed760]" /><div className="min-w-0"><p className="text-sm font-bold capitalize text-white">{String(item.kind || "activity").replaceAll("_", " ")}</p><p className="mt-1 text-xs text-[#b3b3b3]">{String(item.actorName || item.actorId || "Unknown user")}{item.targetName || item.targetId ? ` → ${String(item.targetName || item.targetId)}` : ""}</p>{Boolean(item.summary) && <p className="mt-1 truncate text-xs text-[#727272]">{String(item.summary)}</p>}<p className="mt-2 text-[10px] text-[#555]">{dateText(item.createdAt)}</p></div></article>; }
+function AdminSkeleton() { return <div className="mx-auto max-w-7xl space-y-5 px-4 py-8 md:px-8"><div className="h-20 animate-pulse rounded-2xl bg-[#181818]" /><div className="grid gap-3 sm:grid-cols-3">{[1,2,3].map(item => <div key={item} className="h-24 animate-pulse rounded-2xl bg-[#181818]" />)}</div><div className="h-72 animate-pulse rounded-3xl bg-[#181818]" /></div>; }

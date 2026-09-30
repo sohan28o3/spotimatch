@@ -46,6 +46,7 @@ export async function GET(request: Request) {
     const dayRef = db.doc(`dailyMatches/${uid}/days/${day}`);
     const saved = await dayRef.get();
     let matches = (saved.data()?.matches || []) as TasteMatch[];
+    let dailyTotal = Number(saved.data()?.initialMatchCount ?? matches.length);
 
     if (!saved.exists) {
       const [usersSnap, skipsSnap] = await Promise.all([
@@ -74,7 +75,8 @@ export async function GET(request: Request) {
       }
       candidates.sort((a, b) => b.matchScore - a.matchScore || a.id.localeCompare(b.id));
       matches = candidates.slice(0, DAILY_MATCH_LIMIT);
-      await dayRef.set({ day, matches, skippedIds: [], createdAt: new Date().toISOString() });
+      dailyTotal = matches.length;
+      await dayRef.set({ day, matches, initialMatchCount: dailyTotal, skippedIds: [], createdAt: new Date().toISOString() });
     }
 
     const skippedIds = new Set<string>((saved.data()?.skippedIds || []) as string[]);
@@ -96,7 +98,15 @@ export async function GET(request: Request) {
         if (isPrevious && !excluded.has(match.id) && !previousById.has(match.id)) previousById.set(match.id, match);
       }
     }
-    return json({ locked: false, sourceCount, day, matches, previousMatches: Array.from(previousById.values()) });
+    return json({
+      locked: false,
+      sourceCount,
+      day,
+      matches,
+      dailyTotal,
+      limitedSupply: dailyTotal < DAILY_MATCH_LIMIT,
+      previousMatches: Array.from(previousById.values()),
+    });
   } catch (error) {
     return failure(error);
   }

@@ -198,6 +198,7 @@ export async function PUT(request: Request) {
         showTopArtists: toVisibility(body.showTopArtists ?? previous?.showTopArtists),
         showNowPlaying: toVisibility(body.showNowPlaying ?? previous?.showNowPlaying),
         globalChatNotifications: typeof body.globalChatNotifications === "boolean" ? body.globalChatNotifications : (previous?.globalChatNotifications ?? false),
+        emailMatchNotifications: typeof body.emailMatchNotifications === "boolean" ? body.emailMatchNotifications : (previous?.emailMatchNotifications ?? false),
         mutedChatIds: Array.isArray(body.mutedChatIds) ? body.mutedChatIds : (previous?.mutedChatIds || []),
         blockedUserIds: Array.isArray(body.blockedUserIds) ? body.blockedUserIds : (previous?.blockedUserIds || []),
         createdAt: previous?.createdAt || now,
@@ -255,6 +256,7 @@ export async function PATCH(request: Request) {
     if (body.showTopArtists !== undefined) updates.showTopArtists = toVisibility(body.showTopArtists);
     if (body.showNowPlaying !== undefined) updates.showNowPlaying = toVisibility(body.showNowPlaying);
     if (typeof body.globalChatNotifications === "boolean") updates.globalChatNotifications = body.globalChatNotifications;
+    if (typeof body.emailMatchNotifications === "boolean") updates.emailMatchNotifications = body.emailMatchNotifications;
     if (Array.isArray(body.mutedChatIds)) updates.mutedChatIds = body.mutedChatIds;
     if (Array.isArray(body.blockedUserIds)) updates.blockedUserIds = body.blockedUserIds;
     if (typeof body.bio === "string" && body.bio.length <= 240) updates.bio = body.bio.trim();

@@ -127,6 +127,9 @@ export function ProfileForm({
   const [showNowPlaying, setShowNowPlaying] = useState<import("@/types").VisibilityLevel>(
     profile?.showNowPlaying ?? "none"
   );
+  const [emailMatchNotifications, setEmailMatchNotifications] = useState(
+    profile?.emailMatchNotifications ?? false
+  );
 
   // Sync if profile changes (e.g. re-opened modal)
   const prevUid = useRef(profile?.uid);
@@ -178,6 +181,7 @@ export function ProfileForm({
           showTopSongs,
           showTopArtists,
           showNowPlaying,
+          emailMatchNotifications,
           showRecentToFriends: showTopSongs !== "none" || showTopArtists !== "none",
         });
       }}
@@ -318,6 +322,11 @@ export function ProfileForm({
               onChange={setShowNowPlaying}
             />
           </div>
+
+          <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-white/5 bg-[#1b1b1b] p-3.5">
+            <input type="checkbox" checked={emailMatchNotifications} onChange={event => setEmailMatchNotifications(event.target.checked)} className="mt-0.5 accent-[#1db954]" />
+            <span><span className="block text-xs font-semibold text-white">Email me about new music matches</span><span className="mt-0.5 block text-[11px] leading-4 text-[#727272]">At most one email per day when a new listener is a strong match. You can turn this off anytime.</span></span>
+          </label>
 
           {/* === Save button === */}
           <div className="pt-1 border-t border-[#242424]">

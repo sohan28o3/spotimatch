@@ -57,6 +57,7 @@ import { PhotoUploadModal } from "@/components/PhotoUploadModal";
 import { OnboardingFlow } from "@/components/OnboardingFlow";
 import { UserProfileModal, type UserProfileModalUser } from "@/components/UserProfileModal";
 import { AdminDashboard } from "@/components/AdminDashboard";
+import { MatchesView } from "@/components/MatchesDiscoveryView";
 import { authenticatedFetch } from "@/lib/client-api";
 import { useActivePolling } from "@/hooks/use-active-polling";
 
@@ -907,30 +908,16 @@ export default function Home() {
             />
           )}
           {activeTab === "matches" && (
-            <div className="relative min-h-[calc(100vh-7rem)] overflow-hidden px-4 py-6 md:px-8 md:py-10">
-              <div aria-hidden="true" className="pointer-events-none select-none blur-[3px] opacity-55">
-                <div className="mb-7 flex items-end justify-between gap-4">
-                  <div><div className="h-3 w-28 rounded-full bg-[#1ed760]/70" /><div className="mt-3 h-10 w-72 max-w-[70vw] rounded-xl bg-white/15" /></div>
-                  <div className="h-9 w-28 rounded-full bg-white/10" />
-                </div>
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {[0, 1, 2, 3, 4, 5].map(item => (
-                    <div key={item} className="rounded-3xl border border-white/10 bg-[#181818] p-5">
-                      <div className="flex items-center gap-4"><div className="h-16 w-16 rounded-full bg-white/10" /><div className="flex-1 space-y-2"><div className="h-4 w-3/5 rounded bg-white/15" /><div className="h-3 w-2/5 rounded bg-white/10" /></div><div className="h-10 w-10 rounded-full bg-[#1ed760]/20" /></div>
-                      <div className="mt-5 h-3 w-full rounded bg-white/10" /><div className="mt-2 h-3 w-4/5 rounded bg-white/10" /><div className="mt-5 h-10 rounded-full bg-white/10" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center bg-black/15 p-5 backdrop-blur-[2px]">
-                <section className="w-full max-w-md rounded-3xl border border-white/10 bg-[#181818]/95 p-7 text-center text-white shadow-[0_24px_80px_rgba(0,0,0,0.65)] md:p-9">
-                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#1ed760]/10 text-[#1ed760]"><Users size={27} /></div>
-                  <h1 className="mt-5 text-2xl font-black tracking-tight">Matches is coming soon</h1>
-                  <p className="mt-3 text-sm leading-6 text-[#b3b3b3]">Waiting for more testers to setup to test this feature.</p>
-                  <button type="button" onClick={() => navigateTo("home")} className="mt-6 rounded-full bg-[#1ed760] px-6 py-3 text-sm font-black text-black transition hover:scale-[1.02] hover:bg-[#1fdf64]">Back to Home</button>
-                </section>
-              </div>
-            </div>
+            <MatchesView
+              account={account}
+              onNavigate={navigateTo}
+              onOpenSourceModal={setActiveSourceModal}
+              onOpenUserProfile={userProfile => setSelectedProfileUser(userProfile)}
+              onStartDirectChat={friend => {
+                setActiveDirectChatFriend(friend);
+                navigateTo("chat");
+              }}
+            />
           )}
           {activeTab === "capsule" && (
             <CapsuleView

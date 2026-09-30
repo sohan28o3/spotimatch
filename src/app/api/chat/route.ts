@@ -1,5 +1,6 @@
 import { admin, ApiError, failure, json, readBody, requireUser } from "@/lib/server";
 import type { ChatMessage } from "@/types";
+import { logUserActivity } from "@/lib/activity-log";
 
 export const dynamic = "force-dynamic";
 
@@ -97,6 +98,8 @@ export async function POST(request: Request) {
     } catch {
       // Memory persistence active
     }
+
+    await logUserActivity({ kind: "global_message_sent", actorId: resolvedUid, resourceId: newMsg.id, summary: text ? text.slice(0, 120) : "Shared a music attachment" });
 
     return json({ message: newMsg, ok: true, onlineCount: getOnlineCount() });
   } catch (error) {

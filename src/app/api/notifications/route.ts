@@ -156,7 +156,33 @@ export async function GET(request: Request) {
       console.error("Error loading dm notifications:", err);
     }
 
-    // 3. Global Chat Notifications: ONLY if user explicitly enabled them
+    // 3. Persistent notifications for newly compatible listeners.
+    try {
+      const matchSnap = await db.collection(`matchNotifications/${uid}/items`).orderBy("createdAt", "desc").limit(20).get();
+      for (const document of matchSnap.docs) {
+        const match = document.data();
+        const notifId = String(match.id || `new-match-${document.id}`);
+        if (blockedUserIds.has(String(match.candidateId || document.id))) continue;
+        notifications.push({
+          id: notifId,
+          type: "taste_match",
+          title: "A new music match is available",
+          body: `${match.candidateName || "A new listener"} joined SpotiMatch. ${match.matchReason || "You share a strong music connection."}`,
+          createdAt: String(match.createdAt || new Date().toISOString()),
+          read: persistedReadIds.has(notifId),
+          senderId: String(match.candidateId || document.id),
+          senderName: String(match.candidateName || "SpotiMatch Listener"),
+          senderUsername: String(match.candidateUsername || "listener"),
+          senderAvatarUrl: String(match.candidateAvatarUrl || ""),
+          matchScore: Number(match.matchScore || 0),
+          actionPayload: { candidateId: String(match.candidateId || document.id) },
+        });
+      }
+    } catch (err) {
+      console.error("Error loading match notifications:", err);
+    }
+
+    // 4. Global Chat Notifications: ONLY if user explicitly enabled them
     if (globalChatNotifications) {
       try {
         const chatSnap = await db

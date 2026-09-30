@@ -47,6 +47,7 @@ export interface UserProfile {
   /** Legacy – kept for backwards compat with old data */
   showRecentToFriends?: boolean;
   globalChatNotifications?: boolean;
+  emailMatchNotifications?: boolean;
   mutedChatIds?: string[];
   blockedUserIds?: string[];
 }

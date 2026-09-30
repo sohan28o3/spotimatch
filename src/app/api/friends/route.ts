@@ -1,4 +1,5 @@
 import { admin, ApiError, failure, json, readBody, requireUser } from "@/lib/server";
+import { logUserActivity, type ActivityKind } from "@/lib/activity-log";
 import type { FriendRequest, FriendUser, TasteMatch } from "@/types";
 import {
   buildTasteVector,
@@ -498,6 +499,26 @@ export async function POST(request: Request) {
     }
 
     await docRef.set(social);
+    const activityByAction: Partial<Record<string, ActivityKind>> = {
+      send_request: "friend_request_sent",
+      accept_request: "friend_request_accepted",
+      decline_request: "friend_request_declined",
+      cancel_request: "friend_request_cancelled",
+      remove_friend: "friend_removed",
+      block_user: "user_blocked",
+      unblock_user: "user_unblocked",
+    };
+    const activityKind = activityByAction[action];
+    if (activityKind) {
+      const targetId = String(body.targetId || body.fromUserId || body.friendId || body.targetUsername || "").trim();
+      await logUserActivity({
+        kind: activityKind,
+        actorId: uid,
+        ...(targetId ? { targetId } : {}),
+        ...(typeof body.requestId === "string" ? { resourceId: body.requestId } : {}),
+        summary: action.replaceAll("_", " "),
+      });
+    }
     return json({
       ok: true,
       friends: social.friends,

@@ -1,5 +1,6 @@
 import { admin, ApiError, failure, json, readBody, requireUser } from "@/lib/server";
 import type { DirectChatMessage } from "@/types";
+import { logUserActivity } from "@/lib/activity-log";
 
 export const dynamic = "force-dynamic";
 
@@ -146,6 +147,8 @@ export async function POST(request: Request) {
     } catch (err) {
       console.error("Failed to write DM to Firestore:", err);
     }
+
+    await logUserActivity({ kind: "direct_message_sent", actorId: uid, targetId: friendId, resourceId: threadId, summary: text ? text.slice(0, 120) : "Shared a music attachment" });
 
     return json({ message: newMsg, ok: true });
   } catch (error) {
