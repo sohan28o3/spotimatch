@@ -281,7 +281,7 @@ export function ProfileForm({
               maxLength={240}
               value={bio}
               onChange={e => setBio(e.target.value)}
-              placeholder="Always listening toâ€¦ / Favorite concert memoriesâ€¦"
+              placeholder="Always listening to… / Favorite concert memories…"
               className="w-full px-0 py-1 text-xs bg-transparent text-white placeholder-[#555] outline-none resize-none leading-relaxed"
             />
           </div>
@@ -571,7 +571,7 @@ export function Favorites({
               setQuery(e.target.value);
               resetSearch();
             }}
-            placeholder={`Search for your favorite ${kind}sâ€¦`}
+            placeholder={`Search for your favorite ${kind}s…`}
             className="w-full pl-10 pr-4 py-2.5 text-sm bg-[#242424] border border-transparent focus:border-white rounded-full text-white placeholder-[#727272] outline-none"
           />
         </div>
@@ -580,7 +580,7 @@ export function Favorites({
           disabled={searching}
           className="px-5 py-2.5 text-xs font-bold bg-[#1db954] hover:bg-[#1ed760] text-black rounded-full transition-all shrink-0"
         >
-          {searching ? "Searchingâ€¦" : "Search"}
+          {searching ? "Searching…" : "Search"}
         </button>
       </form>
 
@@ -589,7 +589,7 @@ export function Favorites({
       {searching && (
         <div className="flex items-center gap-2 text-xs text-[#b3b3b3] py-2">
           <LoaderCircle size={15} className="spin text-[#1db954]" />
-          Searching Spotify & Last.fm catalogsâ€¦
+          Searching Spotify & Last.fm catalogs…
         </div>
       )}
 
@@ -702,7 +702,7 @@ export function Snapshot({
       <div className="flex items-center justify-between text-[11px] text-[#727272]">
         <span>
           {source === "spotify"
-            ? `${formatDate(snapshot.from)} â€“ ${formatDate(snapshot.to)}`
+            ? `${formatDate(snapshot.from)} – ${formatDate(snapshot.to)}`
             : "Top artists & tracks"}
         </span>
         <span>Updated {formatDate(snapshot.updatedAt)}</span>
@@ -776,7 +776,7 @@ export function LastfmCard({
                   </span>
                   <span className="block text-[11px] text-[#b3b3b3] truncate">
                     {connection.nowPlaying.artist}
-                    {connection.nowPlaying.album ? ` â€¢ ${connection.nowPlaying.album}` : ""}
+                    {connection.nowPlaying.album ? ` · ${connection.nowPlaying.album}` : ""}
                   </span>
                 </div>
               </div>
@@ -811,7 +811,7 @@ export function LastfmCard({
                       </span>
                       <span className="block text-[11px] text-[#b3b3b3] truncate">
                         {track.artist}
-                        {track.album ? ` â€¢ ${track.album}` : ""}
+                        {track.album ? ` · ${track.album}` : ""}
                       </span>
                     </div>
                   </div>
@@ -1065,7 +1065,7 @@ export function SpotifyImportCard({
           {parsing ? <LoaderCircle size={22} className="spin" /> : <Upload size={22} />}
         </div>
         <strong className="text-sm font-bold text-white mb-1">
-          {parsing ? "Extracting & parsing streamsâ€¦" : "Drop your Spotify ZIP or JSON files here"}
+          {parsing ? "Extracting & parsing streams…" : "Drop your Spotify ZIP or JSON files here"}
         </strong>
         <span className="text-xs text-[#727272]">
           Directly upload my_spotify_data.zip or StreamingHistory*.json files

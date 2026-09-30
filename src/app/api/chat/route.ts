@@ -3,68 +3,8 @@ import type { ChatMessage } from "@/types";
 
 export const dynamic = "force-dynamic";
 
-// Initial seed messages in the global lounge to make the chat immediately active and welcoming
-const seedMessages: ChatMessage[] = [
-  {
-    id: "msg-seed-1",
-    userId: "user-maya",
-    name: "Maya Chen",
-    username: "mayasound",
-    avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&h=300&fit=crop&crop=faces",
-    text: "Welcome to the global lounge! Has anyone checked out their Sound Capsule for this month yet? My top artist was Radiohead again 🎧",
-    createdAt: new Date(Date.now() - 3600000 * 3).toISOString(),
-    attachment: {
-      kind: "track",
-      name: "Weird Fishes / Arpeggi",
-      artist: "Radiohead",
-    },
-  },
-  {
-    id: "msg-seed-2",
-    userId: "user-sam",
-    name: "Sam Takahashi",
-    username: "samtune",
-    avatarUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=300&fit=crop&crop=faces",
-    text: "Texas Sun by Khruangbin & Leon Bridges is the ultimate sunset track. Who else is into neo-psychedelia?",
-    createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-    attachment: {
-      kind: "track",
-      name: "Texas Sun",
-      artist: "Khruangbin & Leon Bridges",
-    },
-  },
-  {
-    id: "msg-seed-3",
-    userId: "user-leo",
-    name: "Leo Rivera",
-    username: "leovibes",
-    avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&crop=faces",
-    text: "Just imported my Spotify history and matched 91% with people here. Loving this app! Drop your favorite track recommendation below 👇",
-    createdAt: new Date(Date.now() - 3600000).toISOString(),
-    attachment: {
-      kind: "track",
-      name: "I Like Me Better",
-      artist: "Lauv",
-    },
-  },
-  {
-    id: "msg-seed-4",
-    userId: "user-chloe",
-    name: "Chloe Martin",
-    username: "chloelofi",
-    avatarUrl: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=300&h=300&fit=crop&crop=faces",
-    text: "Alvvays live shows are unmatched. If you haven't heard Archie Marry Me on good headphones you're missing out ✨",
-    createdAt: new Date(Date.now() - 1800000).toISOString(),
-    attachment: {
-      kind: "track",
-      name: "Archie, Marry Me",
-      artist: "Alvvays",
-    },
-  },
-];
-
 // In-memory fallback / live cache
-const liveMessages: ChatMessage[] = [...seedMessages];
+const liveMessages: ChatMessage[] = [];
 
 // Real-time active presence tracker (tracks active chat connections over a 25-second rolling window)
 const activePresence = new Map<string, number>();
@@ -82,20 +22,20 @@ function getOnlineCount(): number {
   for (const [id, ts] of activePresence.entries()) {
     if (now - ts > 25000) activePresence.delete(id);
   }
-  // Dynamic count: base of 15-18 active community lounge listeners + real live active tabs
-  const base = 15;
-  return base + activePresence.size;
+  return activePresence.size;
 }
 
 export async function GET(request: Request) {
   try {
     const currentUser = await requireUser(request);
+    const { db } = admin();
+    const flags = (await db.doc("featureToggles/flags").get()).data() || {};
+    if (flags.globalChat === false) throw new ApiError("Global chat is temporarily unavailable.", 503);
     const url = new URL(request.url);
     const clientId = url.searchParams.get("cid") || currentUser.uid;
     pingPresence(clientId);
 
     try {
-      const { db } = admin();
       const snap = await db.collection("chat_messages").orderBy("createdAt", "asc").limitToLast(60).get();
       if (!snap.empty) {
         const fromDb: ChatMessage[] = snap.docs.map(doc => doc.data() as ChatMessage);
@@ -114,6 +54,9 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const currentUser = await requireUser(request);
+    const { db } = admin();
+    const flags = (await db.doc("featureToggles/flags").get()).data() || {};
+    if (flags.globalChat === false) throw new ApiError("Global chat is temporarily unavailable.", 503);
 
     const body = await readBody(request);
     const text = typeof body.text === "string" ? body.text.trim() : "";
@@ -127,9 +70,11 @@ export async function POST(request: Request) {
     const resolvedUid = currentUser.uid;
     pingPresence(resolvedUid);
 
-    const name = String(body.name || currentUser?.displayName || "Music Fan").trim().slice(0, 40);
-    const username = String(body.username || "listener").trim().toLowerCase().replace(/^@/, "").slice(0, 24);
-    const avatarUrl = String(body.avatarUrl || currentUser?.photoURL || "");
+    const profile = (await db.doc(`users/${resolvedUid}`).get()).data();
+    if (!profile?.username) throw new ApiError("Complete your profile before chatting.", 409);
+    const name = String(profile.displayName || "Music Fan").trim().slice(0, 40);
+    const username = String(profile.username).trim().toLowerCase().replace(/^@/, "").slice(0, 24);
+    const avatarUrl = String(profile.photoURL || "");
 
     const newMsg: ChatMessage = {
       id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -148,7 +93,6 @@ export async function POST(request: Request) {
 
     // Persist to Firestore if possible
     try {
-      const { db } = admin();
       await db.collection("chat_messages").doc(newMsg.id).set(newMsg);
     } catch {
       // Memory persistence active

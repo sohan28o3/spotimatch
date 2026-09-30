@@ -56,50 +56,7 @@ export async function GET(request: Request) {
       // In-memory fallback
     }
 
-    // In-memory fallback or seed for initial friend conversation
-    let cached = dmCache.get(threadId);
-    if (!cached || cached.length === 0) {
-      if (friendId === "user-sam") {
-        cached = [
-          {
-            id: `seed-dm-${Date.now()}-1`,
-            threadId,
-            senderId: "user-sam",
-            senderName: "Sam Takahashi",
-            senderUsername: "samtune",
-            senderAvatarUrl:
-              "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=300&fit=crop&crop=faces",
-            recipientId: uid,
-            text: "Hey! Loved seeing that we matched on neo-soul and Khruangbin. What have you been listening to lately?",
-            createdAt: new Date(Date.now() - 3600000).toISOString(),
-            attachment: {
-              kind: "track",
-              name: "Texas Sun",
-              artist: "Khruangbin & Leon Bridges",
-            },
-          },
-        ];
-        dmCache.set(threadId, cached);
-      } else if (friendId === "user-maya") {
-        cached = [
-          {
-            id: `seed-dm-${Date.now()}-2`,
-            threadId,
-            senderId: "user-maya",
-            senderName: "Maya Chen",
-            senderUsername: "mayasound",
-            senderAvatarUrl:
-              "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&h=300&fit=crop&crop=faces",
-            recipientId: uid,
-            text: "Hi! Glad we connected. Radiohead fan here — have you checked out your Sound Capsule for this month?",
-            createdAt: new Date(Date.now() - 7200000).toISOString(),
-          },
-        ];
-        dmCache.set(threadId, cached);
-      } else {
-        cached = [];
-      }
-    }
+    const cached = dmCache.get(threadId) || [];
 
     return json({ messages: cached, threadId });
   } catch (error) {
@@ -188,48 +145,6 @@ export async function POST(request: Request) {
         );
     } catch (err) {
       console.error("Failed to write DM to Firestore:", err);
-    }
-
-    // If friend is a mock demo friend (e.g. Sam or Maya), simulate an automated music reply
-    if (friendId.startsWith("user-")) {
-      setTimeout(async () => {
-        try {
-          const replies: Record<string, string> = {
-            "user-sam":
-              "Awesome! Adding that to my queue right now. Keep the recommendations coming 🎶",
-            "user-maya":
-              "Love this track! Always down to discover more music with you.",
-          };
-          const replyText = replies[friendId] || "Thanks for sharing! Listening to it right now.";
-          const replyMsg: DirectChatMessage = {
-            id: `dm-reply-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-            threadId,
-            senderId: friendId,
-            senderName: friendId === "user-sam" ? "Sam Takahashi" : "Maya Chen",
-            senderUsername: friendId === "user-sam" ? "samtune" : "mayasound",
-            senderAvatarUrl:
-              friendId === "user-sam"
-                ? "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=300&fit=crop&crop=faces"
-                : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&h=300&fit=crop&crop=faces",
-            recipientId: uid,
-            text: replyText,
-            createdAt: new Date().toISOString(),
-          };
-          const cur = dmCache.get(threadId) || [];
-          cur.push(replyMsg);
-          dmCache.set(threadId, cur);
-
-          try {
-            const { db } = admin();
-            await db
-              .collection("direct_messages")
-              .doc(threadId)
-              .collection("messages")
-              .doc(replyMsg.id)
-              .set(replyMsg);
-          } catch {}
-        } catch {}
-      }, 1200);
     }
 
     return json({ message: newMsg, ok: true });

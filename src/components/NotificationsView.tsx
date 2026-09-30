@@ -13,6 +13,7 @@ import {
   Disc3,
   LoaderCircle,
   Music2,
+  Trash2,
 } from "lucide-react";
 import type { AccountData, AppNotification, FriendUser } from "@/types";
 import { apiJson } from "@/lib/client-api";
@@ -68,6 +69,17 @@ export function NotificationsView({
         ids: notifications.map(n => n.id),
       });
     } catch {}
+  }
+
+  async function handleClear() {
+    const ids = notifications.map(notification => notification.id);
+    setNotifications([]);
+    if (onNotificationRead) onNotificationRead();
+    try {
+      await apiJson("/api/notifications", "POST", { action: "clear", ids });
+    } catch {
+      await loadNotifications();
+    }
   }
 
   // Accept Friend Request from notification
@@ -132,7 +144,7 @@ export function NotificationsView({
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-16 animate-fadeIn select-none">
+    <div className="mx-3 max-w-4xl space-y-6 rounded-3xl border border-[#303030] bg-[#0d0d0d] p-3 pb-20 animate-fadeIn select-none sm:mx-auto sm:border-0 sm:bg-transparent sm:p-0 sm:pb-16">
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-[#141414] border border-white/5 rounded-2xl shadow-xl">
         <div className="flex items-center gap-3">
@@ -152,15 +164,16 @@ export function NotificationsView({
           </div>
         </div>
 
-        {unreadCount > 0 && (
-          <button
-            onClick={handleMarkAllAsRead}
-            className="flex items-center gap-1.5 px-4 py-2 bg-[#222222] hover:bg-[#2c2c2c] text-[#1ed760] hover:text-white border border-[#1db954]/30 rounded-full text-xs font-bold transition-all cursor-pointer shadow self-start sm:self-auto"
-          >
-            <CheckCheck size={14} />
-            <span>Mark all as read</span>
+        {notifications.length > 0 && <div className="flex flex-wrap gap-2 self-start sm:self-auto">
+          {unreadCount > 0 && (
+            <button onClick={handleMarkAllAsRead} className="flex items-center gap-1.5 rounded-full border border-[#1db954]/30 bg-[#222] px-4 py-2 text-xs font-bold text-[#1ed760] transition hover:bg-[#2c2c2c] hover:text-white">
+              <CheckCheck size={14} /><span>Mark all read</span>
+            </button>
+          )}
+          <button onClick={handleClear} className="flex items-center gap-1.5 rounded-full border border-white/15 bg-[#222] px-4 py-2 text-xs font-bold text-[#b3b3b3] transition hover:border-rose-400/40 hover:text-rose-300">
+            <Trash2 size={14} /><span>Clear</span>
           </button>
-        )}
+        </div>}
       </div>
 
       {/* Filter Tabs */}
@@ -203,15 +216,8 @@ export function NotificationsView({
           </div>
           <h3 className="text-base font-bold text-white">All caught up!</h3>
           <p className="text-xs text-[#b3b3b3] max-w-sm mx-auto">
-            No new notifications right now. Explore Discover Matches to find listeners who share your musical frequency.
+            No new notifications right now.
           </p>
-          <button
-            onClick={() => onNavigate("matches")}
-            className="mt-2 px-5 py-2 text-xs font-bold bg-[#1db954] hover:bg-[#1ed760] text-black rounded-full transition-all cursor-pointer shadow-lg inline-flex items-center gap-1.5"
-          >
-            <span>Discover Matches</span>
-            <ArrowRight size={14} />
-          </button>
         </div>
       ) : (
         <div className="space-y-3">

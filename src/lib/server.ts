@@ -27,7 +27,7 @@ export async function requireUser(request: Request) {
   } catch { throw new ApiError("Your session expired. Please sign in again.", 401); }
 }
 
-const ADMIN_EMAIL = "sohanmutra28@gmail.com";
+export const ADMIN_EMAIL = "sohanmutra28@gmail.com";
 
 export async function requireAdmin(request: Request) {
   const user = await requireUser(request);

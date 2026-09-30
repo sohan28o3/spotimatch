@@ -33,6 +33,8 @@ export async function GET(request: Request) {
   try {
     const { uid } = await requireUser(request);
     const { db } = admin();
+    const flags = (await db.doc("featureToggles/flags").get()).data() || {};
+    if (flags.discovery === false) return json({ disabled: true, locked: false, sourceCount: 0, day: dayFrom(request), matches: [], previousMatches: [] }, 503);
     const day = dayFrom(request);
     const [musicSnap, socialSnap] = await Promise.all([db.doc(`music/${uid}`).get(), db.doc(`social/${uid}`).get()]);
     const callerMusic = (musicSnap.data() || {}) as Partial<MusicData>;

@@ -16,6 +16,7 @@ interface AdminData {
 }
 
 export function AdminDashboard() {
+  const [error, setError] = useState("");
   const [toggles, setToggles] = useState<{ friendRequests: boolean; discovery: boolean; globalChat: boolean }>({
     friendRequests: true,
     discovery: true,
@@ -42,7 +43,6 @@ export function AdminDashboard() {
   const [tab, setTab] = useState<AdminTab>("overview");
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState("");
-  const [error, setError] = useState("");
 
   const load = useCallback(async () => {
     setError("");

@@ -274,6 +274,28 @@ export function ChatView({
   const [friends, setFriends] = useState<FriendUser[]>([]);
   const [mobileShowList, setMobileShowList] = useState<boolean>(!initialDirectFriend);
 
+  useEffect(() => {
+    const showConversationListOnBack = () => setMobileShowList(true);
+    window.addEventListener("popstate", showConversationListOnBack);
+    return () => window.removeEventListener("popstate", showConversationListOnBack);
+  }, []);
+
+  function openMobileChannel(channelId: string) {
+    setActiveChannel(channelId);
+    if (window.innerWidth < 1024) {
+      window.history.pushState(
+        { ...(window.history.state || {}), spotimatch: true, tab: "chat", layer: "chat-thread" },
+        ""
+      );
+    }
+    setMobileShowList(false);
+  }
+
+  function closeMobileChannel() {
+    if (window.history.state?.layer === "chat-thread") window.history.back();
+    else setMobileShowList(true);
+  }
+
   // Automatically mark active friend chat as read if unread
   useEffect(() => {
     if (activeChannel && activeChannel !== "global" && unreadChatUserIds.includes(activeChannel)) {
@@ -284,7 +306,7 @@ export function ChatView({
   // Global Chat State
   const [globalMessages, setGlobalMessages] = useState<ChatMessage[]>([]);
   const [globalInputText, setGlobalInputText] = useState(initialInput || "");
-  const [onlineCount, setOnlineCount] = useState<number>(18);
+  const [onlineCount, setOnlineCount] = useState<number>(0);
   const [globalSending, setGlobalSending] = useState(false);
   const [globalAttachedTrack, setGlobalAttachedTrack] = useState<MusicItem | null>(null);
   const [globalShowPicker, setGlobalShowPicker] = useState(false);
@@ -380,6 +402,12 @@ export function ChatView({
   useEffect(() => {
     if (initialDirectFriend?.id) {
       setActiveChannel(initialDirectFriend.id);
+      if (window.innerWidth < 1024 && window.history.state?.layer !== "chat-thread") {
+        window.history.pushState(
+          { ...(window.history.state || {}), spotimatch: true, tab: "chat", layer: "chat-thread" },
+          ""
+        );
+      }
       setMobileShowList(false);
     }
   }, [initialDirectFriend]);
@@ -683,7 +711,7 @@ export function ChatView({
   }
 
   return (
-    <div className="flex flex-col lg:flex-row h-[calc(100vh-140px)] md:h-[calc(100vh-110px)] max-w-6xl mx-auto gap-4 pb-3 select-none animate-fadeIn">
+    <div className="mx-3 flex h-[calc(100vh-160px)] max-w-6xl flex-col gap-4 rounded-3xl border border-[#303030] bg-[#0d0d0d] p-2 pb-3 animate-fadeIn select-none md:h-[calc(100vh-110px)] lg:mx-auto lg:flex-row lg:border-0 lg:bg-transparent lg:p-0">
       {/* ================================================================= */}
       {/* LEFT COLUMN: CONVERSATIONS LIST (Top: Global Chat, Below: Direct) */}
       {/* Minimalist green dot indicators without counters                   */}
@@ -691,7 +719,7 @@ export function ChatView({
       <div
         className={`${
           mobileShowList ? "flex" : "hidden"
-        } lg:flex flex-col w-full lg:w-80 bg-[#161616] border border-white/5 rounded-2xl p-3 shrink-0 overflow-hidden shadow-xl`}
+        } lg:flex flex-col w-full lg:w-80 bg-[#161616] border border-[#343434] lg:border-white/5 rounded-2xl p-3 shrink-0 overflow-hidden shadow-xl`}
       >
         {/* Header */}
         <div className="px-2 py-2 flex items-center justify-between border-b border-white/5 pb-3">
@@ -706,8 +734,7 @@ export function ChatView({
           {/* 1. TOP ITEM: GLOBAL CHAT LOUNGE */}
           <div
             onClick={() => {
-              setActiveChannel("global");
-              setMobileShowList(false);
+              openMobileChannel("global");
             }}
             className={`p-3 rounded-xl transition-all cursor-pointer border ${
               activeChannel === "global"
@@ -783,8 +810,7 @@ export function ChatView({
                 <div
                   key={`channel-${friend.id}`}
                   onClick={() => {
-                    setActiveChannel(friend.id);
-                    setMobileShowList(false);
+                    openMobileChannel(friend.id);
                     onMarkChatRead?.(friend.id);
                   }}
                   className={`p-2.5 rounded-xl transition-all cursor-pointer border ${
@@ -856,7 +882,7 @@ export function ChatView({
       <div
         className={`${
           mobileShowList ? "hidden" : "flex"
-        } lg:flex flex-1 flex-col bg-[#141414] border border-white/5 rounded-2xl overflow-hidden shadow-2xl relative`}
+        } lg:flex flex-1 flex-col bg-[#141414] border border-[#343434] lg:border-white/5 rounded-2xl overflow-hidden shadow-2xl relative`}
       >
         {activeChannel === "global" ? (
           /* =============================================================== */
@@ -868,7 +894,7 @@ export function ChatView({
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => setMobileShowList(true)}
+                  onClick={closeMobileChannel}
                   className="lg:hidden p-1.5 text-[#b3b3b3] hover:text-white rounded-lg hover:bg-white/5 cursor-pointer"
                   title="Back to conversations list"
                 >
@@ -1203,7 +1229,7 @@ export function ChatView({
               <div className="flex items-center gap-3 min-w-0 flex-1">
                 <button
                   type="button"
-                  onClick={() => setMobileShowList(true)}
+                  onClick={closeMobileChannel}
                   className="lg:hidden p-1.5 text-[#b3b3b3] hover:text-white rounded-lg hover:bg-white/5 cursor-pointer"
                   title="Back to conversations list"
                 >

@@ -3,6 +3,7 @@ import { ApiError } from "@/lib/server";
 import type { MusicItem, MusicSnapshot, NowPlayingTrack } from "@/types";
 import { normalizeItems, imageFrom, artworkCandidates, enrichArtwork } from "@/lib/catalog";
 import { safeMusicUrl } from "@/lib/music";
+import { formatGenreTitle, getArtistGenres } from "@/lib/music-matching";
 
 export function lastfmConfig() {
   const key = process.env.LASTFM_API_KEY,
@@ -60,12 +61,14 @@ export async function lastfm(
 }
 
 /** Real-time Last.fm recent tracks and Now Playing status */
-const topMonthCache = new Map<string, { time: number, topSongs: MusicItem[], topArtists: MusicItem[] }>();
+const topMonthCache = new Map<string, { time: number; topSongs: MusicItem[]; topArtists: MusicItem[]; monthlyScrobbleCount: number }>();
 
 export async function getLiveLastfm(username: string): Promise<{
   nowPlaying: NowPlayingTrack | null;
   recentTracks: MusicItem[]; // Now actually topSongs (1 month)
   recentArtists: MusicItem[]; // Now actually topArtists (1 month)
+  monthlyScrobbleCount: number;
+  monthlyTopGenre: string | null;
 }> {
   // 1. Fetch recent tracks for now playing (limit 2)
   const recentData = await lastfm(
@@ -100,6 +103,7 @@ export async function getLiveLastfm(username: string): Promise<{
   const now = Date.now();
   let topSongs: MusicItem[] = [];
   let topArtists: MusicItem[] = [];
+  let monthlyScrobbleCount = 0;
   
   const cacheKey = username.toLowerCase();
   const cached = topMonthCache.get(cacheKey);
@@ -107,15 +111,24 @@ export async function getLiveLastfm(username: string): Promise<{
   if (cached && now - cached.time < 15 * 60 * 1000) {
     topSongs = cached.topSongs;
     topArtists = cached.topArtists;
+    monthlyScrobbleCount = cached.monthlyScrobbleCount;
   } else {
     try {
-      const [tracksData, artistsData] = await Promise.all([
-        lastfm("user.getTopTracks", { user: username, period: "1month", limit: "5" }, false, 0),
-        lastfm("user.getTopArtists", { user: username, period: "1month", limit: "5" }, false, 0)
+      const monthStart = new Date();
+      monthStart.setUTCDate(1);
+      monthStart.setUTCHours(0, 0, 0, 0);
+      const from = String(Math.floor(monthStart.getTime() / 1000));
+      const to = String(Math.floor(Date.now() / 1000));
+      const [tracksData, artistsData, monthData] = await Promise.all([
+        lastfm("user.getWeeklyTrackChart", { user: username, from, to, limit: "5" }, false, 0),
+        lastfm("user.getWeeklyArtistChart", { user: username, from, to, limit: "5" }, false, 0),
+        lastfm("user.getRecentTracks", { user: username, from, to, limit: "1" }, false, 0)
       ]);
-      topSongs = normalizeItems((tracksData.toptracks as Result)?.track, "track", true).slice(0, 5);
-      topArtists = normalizeItems((artistsData.topartists as Result)?.artist, "artist", true).slice(0, 5);
-      topMonthCache.set(cacheKey, { time: now, topSongs, topArtists });
+      topSongs = normalizeItems((tracksData.weeklytrackchart as Result)?.track, "track", true).slice(0, 5);
+      topArtists = normalizeItems((artistsData.weeklyartistchart as Result)?.artist, "artist", true).slice(0, 5);
+      const total = Number(((monthData.recenttracks as Result | undefined)?.["@attr"] as Result | undefined)?.total);
+      monthlyScrobbleCount = Number.isSafeInteger(total) && total >= 0 ? total : 0;
+      topMonthCache.set(cacheKey, { time: now, topSongs, topArtists, monthlyScrobbleCount });
     } catch {
       // Fallback to cache or empty
       if (cached) {
@@ -124,6 +137,14 @@ export async function getLiveLastfm(username: string): Promise<{
       }
     }
   }
+
+  const genreWeights = new Map<string, number>();
+  for (const artist of topArtists) {
+    for (const genre of getArtistGenres(artist.name)) {
+      genreWeights.set(genre, (genreWeights.get(genre) || 0) + (artist.plays || 1));
+    }
+  }
+  const topGenre = [...genreWeights.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
 
   // Fast in-memory cache to make 3s polling instantaneous and eliminate repetitive Deezer calls
   await Promise.all([
@@ -151,7 +172,13 @@ export async function getLiveLastfm(username: string): Promise<{
     })
   ]);
 
-  return { nowPlaying, recentTracks: topSongs, recentArtists: topArtists };
+  return {
+    nowPlaying,
+    recentTracks: topSongs,
+    recentArtists: topArtists,
+    monthlyScrobbleCount,
+    monthlyTopGenre: topGenre ? formatGenreTitle(topGenre) : null,
+  };
 }
 
 // In-memory artwork caches to accelerate polling

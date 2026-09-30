@@ -38,10 +38,6 @@ import { authenticatedFetch } from "@/lib/client-api";
 import { useActivePolling } from "@/hooks/use-active-polling";
 import { MusicArtwork, formatDate } from "@/components/onboarding";
 import { UserCardContent, type UserProfileModalUser } from "@/components/UserProfileModal";
-import {
-  calculateTasteMatch,
-  DEFAULT_CANDIDATE_MUSIC,
-} from "@/lib/music-matching";
 import { openSpotifyTrack, openSpotifyArtist } from "@/lib/spotify-redirect";
 
 export type SpotifyTab =
@@ -53,7 +49,28 @@ export type SpotifyTab =
   | "notifications"
   | "library"
   | "profile"
+  | "help"
   | "admin";
+
+export function HelpView({ onNavigate }: { onNavigate: (tab: SpotifyTab) => void }) {
+  return <div className="mx-auto w-full max-w-4xl space-y-8 px-4 pb-24 pt-6 md:px-8 md:pt-10">
+    <header><p className="text-xs font-bold uppercase tracking-[0.18em] text-[#1ed760]">SpotiMatch guide</p><h1 className="mt-2 text-3xl font-black tracking-tight md:text-5xl">Find your people through music</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-[#b3b3b3]">Everything needed to set up your listening profile and use the app.</p></header>
+    <div className="grid gap-4 md:grid-cols-2">
+      <Guide title="1. Build your profile">Choose the name, username, photo, bio, and listening details other people can see. Visibility controls remain under Edit profile.</Guide>
+      <Guide title="2. Connect Last.fm">Create a Last.fm account, enable Spotify scrobbling there, then connect it in SpotiMatch. This keeps current listening and this month’s scrobbles updated.</Guide>
+      <Guide title="3. Import Spotify history">Request Extended Streaming History from Spotify’s account privacy page. When it arrives, upload the ZIP or JSON files after accepting the processing notice.</Guide>
+      <Guide title="4. Discover matches">SpotiMatch compares shared artists, tracks, albums, and genres. Daily recommendations exclude friends, blocked users, and profiles you recently skipped.</Guide>
+      <Guide title="5. Requests and chat">Send one optional message with a friend request. Direct chat opens after acceptance; Global Chat is available to every connected listener.</Guide>
+      <Guide title="6. Sound Capsule">Spotify imports provide monthly listening minutes. Last.fm provides current-month scrobbles. Months or genres are never invented when data is missing.</Guide>
+    </div>
+    <section className="rounded-2xl border border-white/10 bg-[#181818] p-5"><h2 className="font-black">Your data</h2><p className="mt-2 text-sm leading-6 text-[#b3b3b3]">SpotiMatch stores music summaries, not raw Spotify device or IP fields. Remove Spotify history or disconnect Last.fm independently from your profile setup controls.</p></section>
+    <button onClick={() => onNavigate("home")} className="rounded-full bg-[#1ed760] px-6 py-3 text-sm font-black text-black">Back to Home</button>
+  </div>;
+}
+
+function Guide({ title, children }: { title: string; children: React.ReactNode }) {
+  return <article className="rounded-2xl border border-white/10 bg-[#181818] p-5"><h2 className="font-black text-white">{title}</h2><p className="mt-2 text-sm leading-6 text-[#b3b3b3]">{children}</p></article>;
+}
 
 export function dedupeItems(items: MusicItem[]): MusicItem[] {
   const seen = new Set<string>();
@@ -64,57 +81,6 @@ export function dedupeItems(items: MusicItem[]): MusicItem[] {
     return true;
   });
 }
-
-export const mockMatches: TasteMatch[] = [
-  {
-    id: "m-1",
-    name: "Maya Chen",
-    username: "mayasound",
-    matchScore: 96,
-    avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop&crop=faces",
-    vibe: "Melancholic Art Rock & Dream Pop",
-    sharedArtists: ["Radiohead", "Beach House", "Frank Ocean", "Tame Impala"],
-    topTrack: "Weird Fishes / Arpeggi",
-    city: "Brooklyn, NY",
-    status: "none",
-  },
-  {
-    id: "m-2",
-    name: "Liam O'Connor",
-    username: "liam_beats",
-    matchScore: 91,
-    avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=faces",
-    vibe: "Alternative Hip-Hop & Nu-Soul",
-    sharedArtists: ["Kendrick Lamar", "Tyler, The Creator", "JID"],
-    topTrack: "N95",
-    city: "Chicago, IL",
-    status: "none",
-  },
-  {
-    id: "m-3",
-    name: "Sofia Rossi",
-    username: "sofia_r",
-    matchScore: 87,
-    avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&crop=faces",
-    vibe: "Indie Pop & 90s Shoegaze",
-    sharedArtists: ["Alvvays", "Slowdive", "The Japanese House"],
-    topTrack: "Archie, Marry Me",
-    city: "Austin, TX",
-    status: "none",
-  },
-  {
-    id: "m-4",
-    name: "Devin Vance",
-    username: "devinvibes",
-    matchScore: 84,
-    avatarUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop&crop=faces",
-    vibe: "Psychedelic Rock & Neo-Soul",
-    sharedArtists: ["Khruangbin", "Mac DeMarco", "Tame Impala"],
-    topTrack: "Texas Sun",
-    city: "Seattle, WA",
-    status: "none",
-  },
-];
 
 // --- Spotify Browse Categories ---
 export const browseCategories = [
@@ -282,6 +248,15 @@ export function HomeView({
     <div className="mx-auto w-full max-w-6xl min-w-0 space-y-6 px-4 pb-12 pt-5 md:px-8 md:pt-8">
       <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1.75fr)_minmax(280px,0.75fr)] lg:items-start">
       <section className="min-w-0 overflow-hidden rounded-3xl border border-[#282828] bg-[#141414] text-white shadow-[0_16px_44px_rgba(0,0,0,0.38)]">
+        <div className="flex flex-wrap items-center gap-2 border-b border-white/10 px-5 py-3 md:px-7" aria-label="Your connected music sources">
+          <span className="mr-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#727272]">Your sources</span>
+          <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${lastfm ? "border-[#d51007]/40 bg-[#d51007]/15 text-white" : "border-white/10 text-[#727272]"}`}>
+            Last.fm {lastfm ? "connected" : "not connected"}
+          </span>
+          <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${spotify ? "border-[#1ed760]/35 bg-[#1ed760]/10 text-[#1ed760]" : "border-white/10 text-[#727272]"}`}>
+            Spotify history {spotify ? "imported" : "not imported"}
+          </span>
+        </div>
         <UserCardContent
           targetUser={cardUser}
           currentUser={profile}
@@ -655,7 +630,7 @@ export function MatchesView({
 }) {
   const [subTab, setSubTab] = useState<"matches" | "friends" | "requests" | "blocked">("matches");
   const [filter, setFilter] = useState<"all" | "high" | "indie" | "hiphop" | "electronic">("all");
-  const [matches, setMatches] = useState<TasteMatch[]>(mockMatches);
+  const [matches, setMatches] = useState<TasteMatch[]>([]);
   const [friends, setFriends] = useState<FriendUser[]>([]);
   const [incomingRequests, setIncomingRequests] = useState<FriendRequest[]>([]);
   const [outgoingRequests, setOutgoingRequests] = useState<string[]>([]);
@@ -676,31 +651,7 @@ export function MatchesView({
         if (data.outgoingRequests) setOutgoingRequests(data.outgoingRequests);
         if (data.blockedUsers) setBlockedUsers(data.blockedUsers);
         if (data.matches) {
-          const serverMatches = (data.matches as TasteMatch[]).map(candidate => {
-            // If candidate is a demo profile and account has local music, compute instant match if needed
-            if (DEFAULT_CANDIDATE_MUSIC[candidate.id] && account?.music) {
-              const localMatch = calculateTasteMatch(
-                account.music,
-                DEFAULT_CANDIDATE_MUSIC[candidate.id],
-                {
-                  userBName: candidate.name,
-                  userBBio: candidate.bio,
-                  userBTopTrackFallback: candidate.topTrack,
-                  userBTopTrackArtistFallback: candidate.topTrackArtist,
-                }
-              );
-              return {
-                ...candidate,
-                matchScore: localMatch.matchScore,
-                sharedArtists:
-                  localMatch.sharedArtists.length > 0 ? localMatch.sharedArtists : candidate.sharedArtists,
-                vibe: localMatch.vibe || candidate.vibe,
-                topTrack: localMatch.topTrack || candidate.topTrack,
-                topTrackArtist: localMatch.topTrackArtist || candidate.topTrackArtist,
-              };
-            }
-            return candidate;
-          });
+          const serverMatches = data.matches as TasteMatch[];
           serverMatches.sort((a, b) => b.matchScore - a.matchScore);
           setMatches(serverMatches);
         }
@@ -1680,13 +1631,58 @@ export function CapsuleView({
   } | null>(null);
   const [showHelpModal, setShowHelpModal] = useState(false);
 
-  // Available monthly data: either parsed from user's real Spotify history or demo capsules
-  const userMonthlyMap = account.music.spotify?.monthlyCapsules;
-  const hasUserHistory = Boolean(userMonthlyMap && Object.keys(userMonthlyMap).length > 0);
+  useEffect(() => {
+    const closeDetailOnBack = () => setActiveDrilldown(null);
+    window.addEventListener("popstate", closeDetailOnBack);
+    return () => window.removeEventListener("popstate", closeDetailOnBack);
+  }, []);
 
-  const availableCapsulesMap = hasUserHistory
-    ? (userMonthlyMap as Record<string, MonthlyCapsule>)
-    : getDemoCapsules();
+  // Only real imported or connected listening data may appear here.
+  const availableCapsulesMap: Record<string, MonthlyCapsule> = {
+    ...(account.music.spotify?.monthlyCapsules || {}),
+  };
+
+  function mergeMonthlyItems(spotifyItems: MusicItem[], lastfmItems: MusicItem[]): MusicItem[] {
+    const merged = new Map<string, MusicItem>();
+    for (const item of [...spotifyItems, ...lastfmItems]) {
+      const key = `${item.kind}:${item.name.trim().toLowerCase()}:${(item.artist || "").trim().toLowerCase()}`;
+      const existing = merged.get(key);
+      if (!existing) merged.set(key, { ...item });
+      else merged.set(key, {
+        ...existing,
+        image: existing.image || item.image,
+        album: existing.album || item.album,
+        plays: Math.max(existing.plays || 0, item.plays || 0),
+      });
+    }
+    return [...merged.values()].sort((a, b) => (b.plays || 0) - (a.plays || 0)).slice(0, 5);
+  }
+
+  const lastfm = account.music.lastfm;
+  if (lastfm?.recentTracks?.length && lastfm.recentArtists?.length) {
+    const now = new Date();
+    const monthKey = now.toISOString().slice(0, 7);
+    const monthName = now.toLocaleDateString("en-US", { month: "long" });
+    const spotifyMonth = availableCapsulesMap[monthKey];
+    const combinedArtists = mergeMonthlyItems(spotifyMonth?.top5Artists || [], lastfm.recentArtists);
+    const combinedSongs = mergeMonthlyItems(spotifyMonth?.top5Songs || [], lastfm.recentTracks);
+    availableCapsulesMap[monthKey] = {
+      monthKey,
+      monthName,
+      year: String(now.getFullYear()),
+      label: `${monthName} ${now.getFullYear()}`,
+      minutesListened: spotifyMonth?.minutesListened || 0,
+      metric: spotifyMonth ? "combined" : "scrobbles",
+      scrobbleCount: lastfm.monthlyScrobbleCount || 0,
+      topGenre: lastfm.monthlyTopGenre || spotifyMonth?.topGenre || null,
+      topArtist: combinedArtists[0],
+      topSong: combinedSongs[0],
+      top5Artists: combinedArtists,
+      top5Songs: combinedSongs,
+      albumsCollage: spotifyMonth?.albumsCollage || [],
+      isCurrentMonth: true,
+    };
+  }
 
   // Sort available months descending (most recent / latest first)
   const availableMonths = Object.keys(availableCapsulesMap).sort().reverse();
@@ -1701,9 +1697,22 @@ export function CapsuleView({
   }
 
   // Handle Back arrow
+  function openDrilldown(mode: "top-artists" | "top-songs" | "time-listened", capsule: MonthlyCapsule) {
+    window.history.pushState(
+      { ...(window.history.state || {}), spotimatch: true, tab: "capsule", layer: "capsule-detail" },
+      ""
+    );
+    setActiveDrilldown({ mode, capsule });
+  }
+
+  function closeDrilldown() {
+    if (window.history.state?.layer === "capsule-detail") window.history.back();
+    else setActiveDrilldown(null);
+  }
+
   function handleBack() {
     if (activeDrilldown) {
-      setActiveDrilldown(null);
+      closeDrilldown();
     } else if (onNavigate) {
       onNavigate("home");
     }
@@ -1715,11 +1724,11 @@ export function CapsuleView({
   if (activeDrilldown && activeDrilldown.mode === "top-artists") {
     const capsule = activeDrilldown.capsule;
     return (
-      <div className="max-w-md mx-auto space-y-6 pb-20 animate-fadeIn select-none">
+      <div className="mx-3 max-w-md space-y-5 rounded-3xl border border-[#303030] bg-[#0d0d0d] p-4 pb-24 animate-fadeIn select-none sm:mx-auto sm:space-y-6 sm:p-6 sm:pb-20">
         {/* Top Header */}
         <div className="flex items-center justify-between pt-2">
           <button
-            onClick={() => setActiveDrilldown(null)}
+            onClick={closeDrilldown}
             className="w-10 h-10 -ml-2 rounded-full hover:bg-white/10 text-white flex items-center justify-center transition-colors cursor-pointer"
             aria-label="Back to Sound Capsule"
           >
@@ -1731,13 +1740,13 @@ export function CapsuleView({
 
         <div>
           <span className="text-xs font-bold uppercase tracking-wider text-[#509bf5]">
-            SOUND CAPSULE RANKING
+            Your month in music
           </span>
           <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-            Top 5 Artists
+            Most-played artists
           </h1>
           <p className="text-xs text-[#b3b3b3] mt-1">
-            Your most listened-to artists in {capsule.label}
+            The artists you played most in {capsule.label}.
           </p>
         </div>
 
@@ -1747,7 +1756,7 @@ export function CapsuleView({
             <div
               key={`drilldown-artist-${artist.name}-${idx}`}
               onClick={() => openSpotifyArtist(artist.name)}
-              className="flex items-center gap-4 p-3.5 bg-[#181818] hover:bg-[#202020] border border-white/5 rounded-2xl transition-all shadow-md group cursor-pointer"
+              className="group flex min-w-0 items-center gap-3 rounded-2xl border border-[#343434] bg-[#181818] p-3 transition-all hover:border-[#4a4a4a] hover:bg-[#202020] sm:gap-4 sm:p-3.5"
               title={`Open ${artist.name}'s discography in Spotify`}
             >
               <span className={`text-base font-black w-6 text-center ${idx === 0 ? "text-[#509bf5]" : "text-[#727272]"}`}>
@@ -1763,12 +1772,12 @@ export function CapsuleView({
                   </h3>
                   {idx === 0 && (
                     <span className="px-2 py-0.5 bg-[#509bf5]/20 text-[#509bf5] text-[10px] font-bold rounded-full">
-                      #1 Artist
+                      Most played
                     </span>
                   )}
                 </div>
                 <span className="text-xs text-[#b3b3b3]">
-                  {artist.plays ? `${artist.plays} streams` : "Heavy rotation"}
+                  {artist.plays ? `${artist.plays} plays recorded` : "Most played this month"}
                 </span>
               </div>
             </div>
@@ -1784,11 +1793,11 @@ export function CapsuleView({
   if (activeDrilldown && activeDrilldown.mode === "top-songs") {
     const capsule = activeDrilldown.capsule;
     return (
-      <div className="max-w-md mx-auto space-y-6 pb-20 animate-fadeIn select-none">
+      <div className="mx-3 max-w-md space-y-5 rounded-3xl border border-[#303030] bg-[#0d0d0d] p-4 pb-24 animate-fadeIn select-none sm:mx-auto sm:space-y-6 sm:p-6 sm:pb-20">
         {/* Top Header */}
         <div className="flex items-center justify-between pt-2">
           <button
-            onClick={() => setActiveDrilldown(null)}
+            onClick={closeDrilldown}
             className="w-10 h-10 -ml-2 rounded-full hover:bg-white/10 text-white flex items-center justify-center transition-colors cursor-pointer"
             aria-label="Back to Sound Capsule"
           >
@@ -1800,13 +1809,13 @@ export function CapsuleView({
 
         <div>
           <span className="text-xs font-bold uppercase tracking-wider text-[#ffdb58]">
-            SOUND CAPSULE RANKING
+            Your month in music
           </span>
           <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-            Top 5 Songs
+            Most-played songs
           </h1>
           <p className="text-xs text-[#b3b3b3] mt-1">
-            Your most played tracks in {capsule.label}
+            The songs you played most in {capsule.label}.
           </p>
         </div>
 
@@ -1816,7 +1825,7 @@ export function CapsuleView({
             <div
               key={`drilldown-song-${song.name}-${idx}`}
               onClick={() => openSpotifyTrack(song.name, song.artist)}
-              className="flex items-center gap-4 p-3.5 bg-[#181818] hover:bg-[#202020] border border-white/5 rounded-2xl transition-all shadow-md group cursor-pointer"
+              className="group flex min-w-0 items-center gap-3 rounded-2xl border border-[#343434] bg-[#181818] p-3 transition-all hover:border-[#4a4a4a] hover:bg-[#202020] sm:gap-4 sm:p-3.5"
               title={`Listen to "${song.name}" by ${song.artist} on Spotify`}
             >
               <span className={`text-base font-black w-6 text-center ${idx === 0 ? "text-[#ffdb58]" : "text-[#727272]"}`}>
@@ -1832,15 +1841,15 @@ export function CapsuleView({
                   </h3>
                   {idx === 0 && (
                     <span className="px-2 py-0.5 bg-[#ffdb58]/20 text-[#ffdb58] text-[10px] font-bold rounded-full">
-                      #1 Song
+                      Most played
                     </span>
                   )}
                 </div>
-                <span className="text-xs text-[#b3b3b3] truncate block">
-                  {song.artist} {song.album ? `ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ ${song.album}` : ""}
+                <span className="block truncate text-xs text-[#b3b3b3]">
+                  {song.artist}{song.album ? ` · ${song.album}` : ""}
                 </span>
                 <span className="text-[11px] text-[#727272]">
-                  {song.plays ? `${song.plays} plays` : "Top spin"}
+                  {song.plays ? `${song.plays} plays recorded` : "Most played this month"}
                 </span>
               </div>
             </div>
@@ -1855,14 +1864,19 @@ export function CapsuleView({
   // =========================================================================
   if (activeDrilldown && activeDrilldown.mode === "time-listened") {
     const capsule = activeDrilldown.capsule;
+    const isScrobbles = capsule.metric === "scrobbles";
+    const isCombined = capsule.metric === "combined";
+    const total = isScrobbles ? (capsule.scrobbleCount || 0) : capsule.minutesListened;
     const hours = (capsule.minutesListened / 60).toFixed(1);
-    const dailyAvg = (capsule.minutesListened / 30).toFixed(0);
+    const daysInMonth = new Date(Number(capsule.year), Number(capsule.monthKey.slice(5, 7)), 0).getDate();
+    const elapsedDays = capsule.isCurrentMonth ? new Date().getDate() : daysInMonth;
+    const dailyAvg = (total / Math.max(1, elapsedDays)).toFixed(0);
 
     return (
       <div className="max-w-md mx-auto space-y-6 pb-20 animate-fadeIn select-none">
         <div className="flex items-center justify-between pt-2">
           <button
-            onClick={() => setActiveDrilldown(null)}
+            onClick={closeDrilldown}
             className="w-10 h-10 -ml-2 rounded-full hover:bg-white/10 text-white flex items-center justify-center transition-colors cursor-pointer"
             aria-label="Back to Sound Capsule"
           >
@@ -1877,30 +1891,31 @@ export function CapsuleView({
             LISTENING ACTIVITY
           </span>
           <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-            Time Listened
+            {isCombined ? "Current Month Activity" : isScrobbles ? "Monthly Scrobbles" : "Time Listened"}
           </h1>
           <p className="text-xs text-[#b3b3b3] mt-1">
-            Total minutes streamed during {capsule.label}
+            {isCombined ? "Spotify history and Last.fm for this month" : isScrobbles ? "Scrobbles recorded" : "Total minutes streamed"} during {capsule.label}
           </p>
         </div>
 
         <div className="p-6 bg-[#181818] border border-white/5 rounded-3xl text-center space-y-2">
-          <span className="text-xs font-semibold text-[#b3b3b3]">Total Listening Time</span>
+          <span className="text-xs font-semibold text-[#b3b3b3]">{isCombined ? "Spotify Listening Time" : isScrobbles ? "Total Scrobbles" : "Total Listening Time"}</span>
           <div className="text-5xl font-black text-[#1ed760] tracking-tight">
-            {capsule.minutesListened.toLocaleString()}
+            {total.toLocaleString()}
           </div>
-          <span className="text-sm font-bold text-white block">minutes streamed</span>
-          <span className="text-xs text-[#727272] block">Approximately {hours} hours of music</span>
+          <span className="text-sm font-bold text-white block">{isScrobbles ? "scrobbles" : "minutes streamed"}</span>
+          {!isScrobbles && <span className="text-xs text-[#727272] block">Approximately {hours} hours of music</span>}
+          {isCombined && <div className="mt-4 border-t border-white/10 pt-4"><span className="text-3xl font-black text-white">{(capsule.scrobbleCount || 0).toLocaleString()}</span><span className="ml-2 text-sm font-bold text-[#b3b3b3]">Last.fm scrobbles</span></div>}
         </div>
 
         <div className="grid grid-cols-2 gap-3 text-left">
           <div className="p-4 bg-[#181818] border border-white/5 rounded-2xl space-y-1">
             <span className="text-[11px] font-bold text-[#727272] uppercase">Daily Average</span>
-            <p className="text-xl font-black text-white">{dailyAvg} mins / day</p>
+            <p className="text-xl font-black text-white">{dailyAvg} {isScrobbles ? "plays" : "mins"} / day</p>
           </div>
           <div className="p-4 bg-[#181818] border border-white/5 rounded-2xl space-y-1">
             <span className="text-[11px] font-bold text-[#727272] uppercase">Top Genre</span>
-            <p className="text-xl font-black text-[#509bf5] truncate">Indie & Pop</p>
+            <p className="text-xl font-black text-[#509bf5] truncate">{capsule.topGenre || "Not enough genre data"}</p>
           </div>
         </div>
       </div>
@@ -1912,6 +1927,7 @@ export function CapsuleView({
     if (capsule.albumsCollage && capsule.albumsCollage.length > 0) {
       return capsule.albumsCollage.slice(0, 3);
     }
+    if (capsule.metric === "scrobbles") return [];
     return capsule.top5Songs.slice(0, 3).map(s => ({
       kind: "album" as const,
       name: s.album || s.name,
@@ -1925,7 +1941,7 @@ export function CapsuleView({
       {/* ===================================================================== */}
       {/* 1. MOBILE PHONE UI (< md): Replicates Spotify phone layout exactly   */}
       {/* ===================================================================== */}
-      <div className="block md:hidden max-w-md mx-auto space-y-6 pb-24 font-sans select-none animate-fadeIn">
+      <div className="mx-3 block max-w-md space-y-6 rounded-3xl border border-[#303030] bg-[#0d0d0d] p-4 pb-24 font-sans animate-fadeIn select-none md:hidden">
         {/* Top Navigation Bar: Back Arrow `<` */}
         <div className="flex items-center justify-between pt-1">
           <button
@@ -1952,9 +1968,6 @@ export function CapsuleView({
           <p className="text-xs text-[#b3b3b3] mt-1">
             Scroll down to journey through your past listening months
           </p>
-          <p className="text-[11px] text-[#1ed760] font-medium mt-1">
-            Note: For accurate sound capsule statistics, refer to your Spotify app.
-          </p>
         </div>
 
         {/* Continuous Chronological Timeline Feed (Newest Month at Top) */}
@@ -1980,15 +1993,15 @@ export function CapsuleView({
 
                 {/* Card 1: Time listened (Big Vibrant Green Minutes) */}
                 <div
-                  onClick={() => setActiveDrilldown({ mode: "time-listened", capsule })}
+                  onClick={() => openDrilldown("time-listened", capsule)}
                   className="p-5 bg-[#181818] hover:bg-[#202020] border border-white/5 rounded-2xl cursor-pointer transition-all space-y-1 shadow-lg group"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-[#b3b3b3]">Time listened</span>
+                    <span className="text-xs font-semibold text-[#b3b3b3]">{capsule.metric === "combined" ? "This month across both sources" : capsule.metric === "scrobbles" ? "Monthly scrobbles" : "Time listened"}</span>
                     <ChevronRight size={18} className="text-[#727272] group-hover:text-white transition-colors" />
                   </div>
                   <div className="text-3xl font-black text-[#1ed760] tracking-tight">
-                    {capsule.minutesListened.toLocaleString()} minutes
+                    {capsule.metric === "combined" ? `${capsule.minutesListened.toLocaleString()} min · ${(capsule.scrobbleCount || 0).toLocaleString()} scrobbles` : capsule.metric === "scrobbles" ? `${(capsule.scrobbleCount || 0).toLocaleString()} scrobbles` : `${capsule.minutesListened.toLocaleString()} minutes`}
                   </div>
                 </div>
 
@@ -1996,7 +2009,7 @@ export function CapsuleView({
                 <div className="grid grid-cols-2 gap-3">
                   {/* Top artist card */}
                   <div
-                    onClick={() => setActiveDrilldown({ mode: "top-artists", capsule })}
+                    onClick={() => openDrilldown("top-artists", capsule)}
                     className="p-4 bg-[#181818] hover:bg-[#202020] border border-white/5 rounded-2xl cursor-pointer transition-all flex flex-col justify-between shadow-lg group relative"
                   >
                     <div>
@@ -2021,7 +2034,7 @@ export function CapsuleView({
 
                   {/* Top song card */}
                   <div
-                    onClick={() => setActiveDrilldown({ mode: "top-songs", capsule })}
+                    onClick={() => openDrilldown("top-songs", capsule)}
                     className="p-4 bg-[#181818] hover:bg-[#202020] border border-white/5 rounded-2xl cursor-pointer transition-all flex flex-col justify-between shadow-lg group relative"
                   >
                     <div>
@@ -2046,7 +2059,7 @@ export function CapsuleView({
                 </div>
 
                 {/* Card 4: 3 Boxes for Most Listened Albums */}
-                <div className="space-y-2">
+                {top3Albums.length > 0 && <div className="space-y-2">
                   <span className="text-[11px] font-bold text-[#727272] uppercase tracking-wider block">
                     Most Listened Albums
                   </span>
@@ -2074,7 +2087,7 @@ export function CapsuleView({
                       </div>
                     ))}
                   </div>
-                </div>
+                </div>}
 
                 {/* Divider between months */}
                 {monthIdx < availableMonths.length - 1 && (
@@ -2119,9 +2132,6 @@ export function CapsuleView({
               <p className="text-sm text-[#b3b3b3] leading-relaxed">
                 A chronological acoustic record of your musical evolution. Scroll through each month to explore your top artists, tracks, and most played records.
               </p>
-              <p className="text-xs text-[#1ed760] font-medium mt-1">
-                Note: For accurate sound capsule statistics, refer to your Spotify app.
-              </p>
             </div>
             <div className="flex items-center gap-4">
               <div className="p-4 bg-white/5 border border-white/10 rounded-2xl text-center min-w-[130px]">
@@ -2129,7 +2139,7 @@ export function CapsuleView({
                 <span className="text-3xl font-black text-white mt-1 block">{availableMonths.length}</span>
               </div>
               <div className="p-4 bg-white/5 border border-white/10 rounded-2xl text-center min-w-[140px]">
-                <span className="text-[11px] font-bold text-[#b3b3b3] uppercase tracking-wider block">Total Listened</span>
+                <span className="text-[11px] font-bold text-[#b3b3b3] uppercase tracking-wider block">Spotify history</span>
                 <span className="text-3xl font-black text-[#1ed760] mt-1 block">
                   {Object.values(availableCapsulesMap).reduce((acc, c) => acc + c.minutesListened, 0).toLocaleString()} <span className="text-xs text-[#b3b3b3] font-normal">mins</span>
                 </span>
@@ -2159,7 +2169,7 @@ export function CapsuleView({
                 }`}
               >
                 {cap.monthName} {cap.year}
-                {cap.isCurrentMonth ? " Ãƒâ€šÃ‚· Live" : ""}
+                {cap.isCurrentMonth ? " · Live" : ""}
               </button>
             );
           })}
@@ -2194,7 +2204,7 @@ export function CapsuleView({
                       </span>
                     )}
                     <span className="text-xs text-[#b3b3b3] font-medium">
-                      {capsule.minutesListened.toLocaleString()} mins (~{(capsule.minutesListened / 60).toFixed(1)} hrs)
+                      {capsule.metric === "combined" ? `${capsule.minutesListened.toLocaleString()} mins · ${(capsule.scrobbleCount || 0).toLocaleString()} scrobbles` : capsule.metric === "scrobbles" ? `${(capsule.scrobbleCount || 0).toLocaleString()} scrobbles` : `${capsule.minutesListened.toLocaleString()} mins (~${(capsule.minutesListened / 60).toFixed(1)} hrs)`}
                     </span>
                   </div>
                 </div>
@@ -2203,34 +2213,35 @@ export function CapsuleView({
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
                   {/* Card 1: Time Listened */}
                   <div
-                    onClick={() => setActiveDrilldown({ mode: "time-listened", capsule })}
+                    onClick={() => openDrilldown("time-listened", capsule)}
                     className="p-6 bg-[#181818] hover:bg-[#202020] border border-white/5 rounded-2xl cursor-pointer transition-all shadow-xl flex flex-col justify-between group"
                   >
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-bold text-[#b3b3b3] uppercase tracking-wider flex items-center gap-1.5">
-                          <Clock size={14} className="text-[#1ed760]" /> Time Listened
+                          <Clock size={14} className="text-[#1ed760]" /> {capsule.metric === "combined" ? "This Month" : capsule.metric === "scrobbles" ? "Monthly Scrobbles" : "Time Listened"}
                         </span>
                         <ChevronRight size={18} className="text-[#727272] group-hover:text-white transition-colors" />
                       </div>
                       <div className="text-4xl font-black text-[#1ed760] tracking-tight mt-3">
-                        {capsule.minutesListened.toLocaleString()}
+                        {capsule.metric === "scrobbles" ? (capsule.scrobbleCount || 0).toLocaleString() : capsule.minutesListened.toLocaleString()}
                       </div>
-                      <span className="text-sm font-bold text-white block mt-0.5">minutes streamed</span>
+                      <span className="text-sm font-bold text-white block mt-0.5">{capsule.metric === "scrobbles" ? "scrobbles" : "Spotify minutes"}</span>
+                      {capsule.metric === "combined" && <span className="mt-2 block text-lg font-black text-white">{(capsule.scrobbleCount || 0).toLocaleString()} <span className="text-xs font-bold text-[#b3b3b3]">Last.fm scrobbles</span></span>}
                       <p className="text-xs text-[#727272] mt-2">
-                        Approximately {(capsule.minutesListened / 60).toFixed(1)} hours of audio recorded.
+                        {capsule.metric === "combined" ? "Combined rankings from both sources for this month." : capsule.metric === "scrobbles" ? "plays recorded by Last.fm this month" : `Approximately ${(capsule.minutesListened / 60).toFixed(1)} hours of audio recorded.`}
                       </p>
                     </div>
 
                     <div className="pt-6 mt-6 border-t border-white/5 flex items-center justify-between text-xs">
-                      <span className="text-[#b3b3b3]">Daily average</span>
-                      <span className="font-bold text-white">~{(capsule.minutesListened / 30).toFixed(0)} mins / day</span>
+                      <span className="text-[#b3b3b3]">Top genre</span>
+                      <span className="font-bold text-white">{capsule.topGenre || "Not enough genre data"}</span>
                     </div>
                   </div>
 
                   {/* Card 2: Top Artist Spotlight */}
                   <div
-                    onClick={() => setActiveDrilldown({ mode: "top-artists", capsule })}
+                    onClick={() => openDrilldown("top-artists", capsule)}
                     className="p-6 bg-[#181818] hover:bg-[#202020] border border-white/5 rounded-2xl cursor-pointer transition-all shadow-xl flex flex-col justify-between group relative"
                   >
                     <div>
@@ -2244,7 +2255,7 @@ export function CapsuleView({
                         {capsule.topArtist.name}
                       </h3>
                       <span className="text-xs text-[#727272] block">
-                        {capsule.top5Artists[0]?.plays ? `${capsule.top5Artists[0].plays} streams` : "#1 in rotation"}
+                        {capsule.top5Artists[0]?.plays ? `${capsule.top5Artists[0].plays} ${capsule.metric === "minutes" ? "streams" : "plays"}` : "#1 in rotation"}
                       </span>
                     </div>
 
@@ -2259,13 +2270,13 @@ export function CapsuleView({
 
                     <div className="pt-4 border-t border-white/5 flex items-center justify-between text-xs">
                       <span className="text-[#b3b3b3]">Ranking</span>
-                      <span className="font-bold text-[#509bf5] group-hover:underline">Explore Top 5 Artists ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢</span>
+                      <span className="font-bold text-[#509bf5] group-hover:underline">Explore Top 5 Artists →</span>
                     </div>
                   </div>
 
                   {/* Card 3: Top Song Spotlight */}
                   <div
-                    onClick={() => setActiveDrilldown({ mode: "top-songs", capsule })}
+                    onClick={() => openDrilldown("top-songs", capsule)}
                     className="p-6 bg-[#181818] hover:bg-[#202020] border border-white/5 rounded-2xl cursor-pointer transition-all shadow-xl flex flex-col justify-between group relative"
                   >
                     <div>
@@ -2294,17 +2305,17 @@ export function CapsuleView({
 
                     <div className="pt-4 border-t border-white/5 flex items-center justify-between text-xs">
                       <span className="text-[#b3b3b3]">Ranking</span>
-                      <span className="font-bold text-[#ffdb58] group-hover:underline">Explore Top 5 Songs ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢</span>
+                      <span className="font-bold text-[#ffdb58] group-hover:underline">Explore Top 5 Songs →</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Row 2: Top 3 Most Listened Albums */}
-                <div className="space-y-3 pt-2">
+                {top3Albums.length > 0 && <div className="space-y-3 pt-2">
                   <div className="flex items-center gap-2">
                     <Disc3 size={18} className="text-[#1db954]" />
                     <h3 className="text-base font-bold text-white">Most Listened Albums</h3>
-                    <span className="text-xs text-[#727272]">Ãƒâ€šÃ‚· Top 3 albums on heavy repeat in {capsule.monthName}</span>
+                    <span className="text-xs text-[#727272]">· Top 3 albums on repeat in {capsule.monthName}</span>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -2335,7 +2346,7 @@ export function CapsuleView({
                       </div>
                     ))}
                   </div>
-                </div>
+                </div>}
 
                 {/* Month Divider */}
                 {monthIdx < availableMonths.length - 1 && (
@@ -2358,13 +2369,10 @@ export function CapsuleView({
               About Sound Capsule
             </h3>
             <p className="text-xs text-[#b3b3b3] leading-relaxed">
-              Your Sound Capsule captures your listening habits month by month, highlighting your top artist, top song, listening duration, and most listened albums.
+              Your Sound Capsule captures listening month by month. Spotify history shows listening minutes; Last.fm shows current-month scrobbles.
             </p>
             <p className="text-xs text-[#b3b3b3] leading-relaxed">
               Only months with listening data are unlocked. For the active month, your stats automatically refresh once a day.
-            </p>
-            <p className="text-xs text-[#1db954] font-medium leading-relaxed bg-[#1db954]/10 p-2.5 rounded-lg border border-[#1db954]/20">
-              Note: For accurate sound capsule statistics, refer to your Spotify app.
             </p>
             <button
               onClick={() => setShowHelpModal(false)}

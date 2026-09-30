@@ -5,29 +5,7 @@ export async function PUT(request: Request) {
   try {
     const user = await requireUser(request), body = await readBody(request), { db } = admin();
     const userDoc = await db.doc(`users/${user.uid}`).get();
-    if (!userDoc.exists) {
-      const fallbackUsername = `user_${user.uid.slice(0, 8).toLowerCase()}`;
-      const now = new Date().toISOString();
-      const defaultProfile = {
-        uid: user.uid,
-        username: fallbackUsername,
-        displayName: (user as { name?: string }).name || "Music Listener",
-        bio: "",
-        photoURL: typeof (user as { picture?: string }).picture === "string" ? (user as { picture?: string }).picture : "",
-        avatar: "google",
-        onboardingStep: 1,
-        createdAt: now,
-        updatedAt: now,
-      };
-      await db.runTransaction(async tx => {
-        const reservation = db.doc(`usernames/${fallbackUsername}`);
-        const resSnap = await tx.get(reservation);
-        if (!resSnap.exists || resSnap.data()?.uid === user.uid) {
-          tx.set(reservation, { uid: user.uid });
-        }
-        tx.set(db.doc(`users/${user.uid}`), defaultProfile);
-      });
-    }
+    if (!userDoc.exists) throw new ApiError("Create your profile before adding listening data.", 409);
     let update;
     try {
       if (body.source === "favorites") update = { favorites: validateItems(body.items) };

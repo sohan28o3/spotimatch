@@ -53,7 +53,7 @@ test("administrator operations require the verified email allowlist on the serve
     readFile(new URL("../src/app/api/admin/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../src/app/page.tsx", import.meta.url), "utf8"),
   ]);
-  assert.match(serverSource, /ADMIN_EMAIL\s*=\s*["']sohamutra28@gmail\.com["']/);
+  assert.match(serverSource, /ADMIN_EMAIL\s*=\s*["']sohanmutra28@gmail\.com["']/);
   assert.match(serverSource, /user\.email_verified/);
   assert.match(adminRoute, /requireAdmin\(request\)/);
   assert.doesNotMatch(adminRoute, /requireUser\(request\)/);

@@ -1,5 +1,5 @@
 // src/app/api/admin/toggles/route.ts
-import { admin, json, failure, readBody, requireAdmin } from "@/lib/server";
+import { admin, json, failure, readBody, requireAdmin, requireUser } from "@/lib/server";
 
 export const dynamic = "force-dynamic";
 
@@ -7,14 +7,14 @@ const TOGGLES_DOC = "featureToggles/flags";
 
 export async function GET(request: Request) {
   try {
-    await requireAdmin(request);
+    await requireUser(request);
     const { db } = admin();
     const snap = await db.doc(TOGGLES_DOC).get();
-    const data = snap.exists ? snap.data() : {};
+    const data = snap.data() || {};
     return json({
-      friendRequests: Boolean(data.friendRequests),
-      discovery: Boolean(data.discovery),
-      globalChat: Boolean(data.globalChat),
+      friendRequests: data.friendRequests !== false,
+      discovery: data.discovery !== false,
+      globalChat: data.globalChat !== false,
     });
   } catch (error) {
     return failure(error);
@@ -23,7 +23,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const administrator = await requireAdmin(request);
+    await requireAdmin(request);
     const body = await readBody(request);
     const name: string = String(body.name);
     const value: boolean = Boolean(body.value);

@@ -1,4 +1,20 @@
 import type { MonthlyCapsule, MusicItem, MusicKind, SpotifyImport } from "../types/index";
+const IMPORT_GENRES: Record<string, string[]> = {
+  radiohead: ["art rock", "alternative rock"],
+  "kendrick lamar": ["hip hop", "conscious hip hop"],
+  "the weeknd": ["r&b", "pop"],
+  "taylor swift": ["pop", "singer-songwriter"],
+  "billie eilish": ["alternative pop", "pop"],
+  "beach house": ["dream pop", "indie"],
+  "arctic monkeys": ["indie rock", "alternative rock"],
+  "frank ocean": ["alternative r&b", "neo soul"],
+  "daft punk": ["electronic", "house"],
+  "lana del rey": ["alternative pop", "dream pop"],
+  "tame impala": ["psychedelic rock", "indie"],
+  sza: ["r&b", "neo soul"],
+};
+const importGenresFor = (artist: string) => IMPORT_GENRES[artist.trim().toLowerCase()] || [];
+const genreTitle = (genre: string) => genre.split(/\s+/).map(word => word ? word[0].toUpperCase() + word.slice(1) : word).join(" ");
 export const itemKey = (item: MusicItem) => JSON.stringify([item.kind, item.name.trim().toLocaleLowerCase("en"), item.artist.trim().toLocaleLowerCase("en")]);
 const text = (value: unknown) => typeof value === "string" ? value.trim() : "";
 
@@ -144,12 +160,21 @@ export async function parseSpotifyFiles(files: { name: string; text: string }[])
       .map(al => ({ kind: "album", name: al.name, artist: al.artist, plays: al.count }));
 
     if (top5Artists.length && top5Songs.length) {
+      const genreCounts = new Map<string, number>();
+      for (const artist of top5Artists) {
+        for (const genre of importGenresFor(artist.name)) {
+          genreCounts.set(genre, (genreCounts.get(genre) || 0) + (artist.plays || 1));
+        }
+      }
+      const topGenreEntry = [...genreCounts.entries()].sort((a, b) => b[1] - a[1])[0];
       monthlyCapsules[monthKey] = {
         monthKey,
         monthName,
         year: yearStr,
         label: `${monthName} ${yearStr}`,
         minutesListened: Math.round(bucket.totalMs / 60000),
+        metric: "minutes",
+        topGenre: topGenreEntry ? genreTitle(topGenreEntry[0]) : null,
         topArtist: top5Artists[0],
         topSong: top5Songs[0],
         top5Artists,

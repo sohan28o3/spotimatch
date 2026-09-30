@@ -1,6 +1,5 @@
 import { admin, ApiError, failure, json, readBody, requireUser } from "@/lib/server";
 import { emptyMusic, type VisibilityLevel } from "@/types";
-import { DEFAULT_CANDIDATE_MUSIC } from "@/lib/music-matching";
 
 const VALID_VISIBILITY: VisibilityLevel[] = ["public", "friends", "none"];
 function toVisibility(val: unknown, fallback: VisibilityLevel = "none"): VisibilityLevel {
@@ -142,40 +141,6 @@ export async function GET(request: Request) {
             },
           });
         }
-      }
-
-      // If user not found in Firestore, check candidate profiles (demo friends & matches)
-      const candidateId = targetUid || (targetUsername ? `user-${targetUsername.replace(/^@/, "").toLowerCase()}` : "");
-      if (candidateId && DEFAULT_CANDIDATE_MUSIC[candidateId]) {
-        const candMusic = DEFAULT_CANDIDATE_MUSIC[candidateId];
-        const tracks = candMusic.favorites?.filter((f: { kind: string }) => f.kind === "track") || [];
-        const artists = candMusic.favorites?.filter((f: { kind: string }) => f.kind === "artist") || [];
-        const isSam = candidateId === "user-sam";
-        const vis: VisibilityLevel = isSam ? "friends" : "none";
-        return json({
-          profile: {
-            uid: candidateId,
-            username: candidateId.replace(/^user-/, ""),
-            displayName: isSam ? "Sam Takahashi" : candidateId.replace(/^user-/, ""),
-            bio: "",
-            photoURL: "",
-            avatar: "initials",
-            createdAt: new Date().toISOString(),
-            showTopSongs: vis,
-            showTopArtists: vis,
-            showNowPlaying: vis,
-          },
-          music: {
-            favorites: candMusic.favorites || [],
-            spotify: null,
-            lastfm: null,
-            topSongs: isSam ? tracks.slice(0, 5) : [],
-            topArtists: isSam ? artists.slice(0, 5) : [],
-            showTopSongs: vis,
-            showTopArtists: vis,
-            showNowPlaying: vis,
-          },
-        });
       }
 
       return json({ profile: null, music: emptyMusic() });

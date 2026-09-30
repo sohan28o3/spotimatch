@@ -13,6 +13,10 @@ export interface MonthlyCapsule {
   year: string;
   label: string;
   minutesListened: number;
+  /** Spotify exports provide duration; Last.fm provides a monthly scrobble count. */
+  metric?: "minutes" | "scrobbles" | "combined";
+  scrobbleCount?: number;
+  topGenre?: string | null;
   topArtist: MusicItem;
   topSong: MusicItem;
   top5Artists: MusicItem[];
@@ -66,6 +70,8 @@ export interface MusicData {
     nowPlaying?: NowPlayingTrack | null;
     recentTracks?: MusicItem[];
     recentArtists?: MusicItem[];
+    monthlyScrobbleCount?: number;
+    monthlyTopGenre?: string | null;
     snapshot: MusicSnapshot | null;
   } | null;
 }

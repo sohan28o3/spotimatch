@@ -3,13 +3,9 @@ import type { FriendRequest, FriendUser, TasteMatch } from "@/types";
 import {
   buildTasteVector,
   calculateTasteMatch,
-  DEFAULT_CANDIDATE_MUSIC,
 } from "@/lib/music-matching";
 
 export const dynamic = "force-dynamic";
-
-// Rich initial listener profiles with authentic tastes and avatars
-export const defaultCandidateProfiles: TasteMatch[] = [];
 
 interface SocialDoc {
   friends: FriendUser[];
@@ -51,7 +47,6 @@ export async function GET(request: Request) {
 
     const callerMusic = callerMusicSnap.exists ? callerMusicSnap.data() : null;
     const callerTaste = buildTasteVector(callerMusic);
-    const hasCallerTaste = callerTaste.artistMagnitude > 0 || callerTaste.genreMagnitude > 0;
 
     // Determine current status for all candidates
     const friendIds = new Set(social.friends.map(f => f.id));
@@ -111,32 +106,7 @@ export async function GET(request: Request) {
       console.error("Failed to load real candidates with music:", err);
     }
 
-    // Combine real registered users and demo profiles with dynamic matches
-    const existingUsernames = new Set(realCandidates.map(r => r.username.toLowerCase()));
-    const extraDefaults = defaultCandidateProfiles
-      .filter(c => !existingUsernames.has(c.username.toLowerCase()))
-      .map(candidate => {
-        const demoMusic = DEFAULT_CANDIDATE_MUSIC[candidate.id];
-        const matchResult = calculateTasteMatch(callerTaste, demoMusic, {
-          userBName: candidate.name,
-          userBBio: candidate.bio,
-          userBTopTrackFallback: candidate.topTrack,
-          userBTopTrackArtistFallback: candidate.topTrackArtist,
-        });
-
-        return {
-          ...candidate,
-          matchScore: hasCallerTaste ? matchResult.matchScore : candidate.matchScore,
-          sharedArtists: hasCallerTaste
-            ? (matchResult.sharedArtists.length > 0 ? matchResult.sharedArtists : candidate.sharedArtists.slice(0, 3))
-            : candidate.sharedArtists,
-          vibe: hasCallerTaste ? matchResult.vibe : candidate.vibe,
-          topTrack: matchResult.topTrack || candidate.topTrack,
-          topTrackArtist: matchResult.topTrackArtist || candidate.topTrackArtist,
-        };
-      });
-
-    const allCandidates = [...realCandidates, ...extraDefaults];
+    const allCandidates = realCandidates;
 
     // Sort by matchScore descending so users with the highest compatibility appear first
     allCandidates.sort((a, b) => b.matchScore - a.matchScore);
@@ -248,6 +218,8 @@ export async function POST(request: Request) {
     if (!social.outgoingRequests) social.outgoingRequests = [];
 
     if (action === "send_request") {
+      const flags = (await db.doc("featureToggles/flags").get()).data() || {};
+      if (flags.friendRequests === false) throw new ApiError("Friend requests are temporarily unavailable.", 503);
       let targetId = String(body.targetId || "").trim();
       if (!targetId && body.targetUsername) {
         targetId = String(body.targetUsername).trim();

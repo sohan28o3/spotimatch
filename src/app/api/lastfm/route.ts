@@ -79,6 +79,8 @@ export async function POST(request: Request) {
         updates["lastfm.nowPlaying"] = live.nowPlaying;
         updates["lastfm.recentTracks"] = live.recentTracks;
         updates["lastfm.recentArtists"] = live.recentArtists;
+        updates["lastfm.monthlyScrobbleCount"] = live.monthlyScrobbleCount;
+        updates["lastfm.monthlyTopGenre"] = live.monthlyTopGenre;
       }
       tx.update(db.doc(`music/${user.uid}`), updates);
     });

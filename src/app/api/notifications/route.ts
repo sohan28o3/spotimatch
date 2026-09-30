@@ -12,6 +12,7 @@ export async function GET(request: Request) {
 
     // Read persistent read notification IDs and user settings for this user
     let persistedReadIds = new Set<string>();
+    let dismissedIds = new Set<string>();
     let socialData: Record<string, unknown> | null = null;
     let userDoc: Record<string, unknown> | null = null;
     try {
@@ -23,6 +24,7 @@ export async function GET(request: Request) {
         socialData = socialSnap.data() as Record<string, unknown>;
         const stored = (socialData?.readNotifications || []) as string[];
         persistedReadIds = new Set(stored);
+        dismissedIds = new Set((socialData?.dismissedNotifications || []) as string[]);
       }
       if (uSnap.exists) {
         userDoc = uSnap.data() as Record<string, unknown>;
@@ -194,13 +196,15 @@ export async function GET(request: Request) {
       }
     }
 
+    const visibleNotifications = notifications.filter(item => !dismissedIds.has(item.id));
+
     // Sort descending by date
-    notifications.sort(
+    visibleNotifications.sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
 
-    const unreadCount = notifications.filter(n => !n.read).length;
-    return json({ notifications, unreadCount, hasUnread: unreadCount > 0 });
+    const unreadCount = visibleNotifications.filter(n => !n.read).length;
+    return json({ notifications: visibleNotifications, unreadCount, hasUnread: unreadCount > 0 });
   } catch (error) {
     return failure(error);
   }
@@ -220,6 +224,21 @@ export async function POST(request: Request) {
       const existing = (sSnap.data()?.readNotifications || []) as string[];
       await socialRef.set(
         { readNotifications: Array.from(new Set([...existing, ...ids])) },
+        { merge: true }
+      );
+      return json({ success: true });
+    }
+
+    if (action === "clear") {
+      const ids = Array.isArray(body.ids)
+        ? (body.ids as unknown[]).filter((id): id is string => typeof id === "string").slice(0, 200)
+        : [];
+      const { db } = admin();
+      const socialRef = db.doc(`social/${uid}`);
+      const sSnap = await socialRef.get();
+      const existing = (sSnap.data()?.dismissedNotifications || []) as string[];
+      await socialRef.set(
+        { dismissedNotifications: Array.from(new Set([...existing, ...ids])).slice(-500) },
         { merge: true }
       );
       return json({ success: true });

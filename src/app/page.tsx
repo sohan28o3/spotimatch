@@ -1,6 +1,5 @@
 "use client";
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import Link from "next/link";
 import { onAuthStateChanged, signInWithPopup, signOut, type User } from "firebase/auth";
 import {
   Home as HomeIcon,
@@ -25,6 +24,7 @@ import {
   Trash2,
   Radio,
   ShieldAlert,
+  CircleHelp,
 } from "lucide-react";
 import { auth, googleProvider, isFirebaseConfigured } from "@/lib/firebase";
 import {
@@ -50,12 +50,12 @@ import {
   ChatView,
   NotificationsView,
   LibraryView,
+  HelpView,
   ProfileView,
   type SpotifyTab, getCombinedTopSongs, getCombinedTopArtists } from "@/components/SpotifyViews";
 import { PhotoUploadModal } from "@/components/PhotoUploadModal";
 import { OnboardingFlow } from "@/components/OnboardingFlow";
 import { UserProfileModal, type UserProfileModalUser } from "@/components/UserProfileModal";
-import { MatchesView } from "@/components/MatchesDiscoveryView";
 import { AdminDashboard } from "@/components/AdminDashboard";
 import { authenticatedFetch } from "@/lib/client-api";
 import { useActivePolling } from "@/hooks/use-active-polling";
@@ -68,6 +68,7 @@ export default function Home() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [spotifyConsent, setSpotifyConsent] = useState(false);
 
   // Navigation tab
   const [activeTab, setActiveTab] = useState<SpotifyTab>("home");
@@ -94,6 +95,8 @@ export default function Home() {
   } | null>(null);
   const knownNotificationIds = useRef<Set<string>>(new Set());
   const initialNotifFetchDone = useRef(false);
+  const handlingBrowserBack = useRef(false);
+  const previousHistoryLayer = useRef<string | null>(null);
 
   // Live track scrobbled from Last.fm
   const liveNowPlaying = account.music.lastfm?.nowPlaying ?? null;
@@ -129,7 +132,11 @@ export default function Home() {
           };
           if (errors[result]) setError(errors[result]);
           else setNotice("Last.fm connected! Listening data will sync in the background.");
-          window.history.replaceState({}, "", "/");
+          window.history.replaceState(
+            { ...(window.history.state || {}), spotimatch: true, tab: activeTab, layer: null },
+            "",
+            "/"
+          );
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load account.");
@@ -259,6 +266,53 @@ export default function Home() {
   }, [user]);
   useActivePolling(checkNotifications, Boolean(user));
 
+  useEffect(() => {
+    const current = window.history.state || {};
+    if (!current.spotimatch) {
+      window.history.replaceState({ ...current, spotimatch: true, tab: "home", layer: null }, "");
+    }
+    const handlePopState = (event: PopStateEvent) => {
+      handlingBrowserBack.current = true;
+      setIsPhotoModalOpen(false);
+      setIsAccountSettingsOpen(false);
+      setConfirmDeleteAccount(false);
+      setActiveSourceModal(null);
+      setSelectedProfileUser(null);
+      setShowProfileDropdown(false);
+      const nextTab = event.state?.spotimatch && event.state?.tab
+        ? event.state.tab as SpotifyTab
+        : "home";
+      setActiveTab(nextTab);
+      window.setTimeout(() => { handlingBrowserBack.current = false; }, 0);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  const activeHistoryLayer = isPhotoModalOpen
+    ? "photo"
+    : isAccountSettingsOpen
+      ? "settings"
+      : activeSourceModal
+        ? `source:${activeSourceModal}`
+        : selectedProfileUser
+          ? "profile"
+          : null;
+
+  useEffect(() => {
+    const previous = previousHistoryLayer.current;
+    previousHistoryLayer.current = activeHistoryLayer;
+    if (handlingBrowserBack.current) return;
+    if (activeHistoryLayer && activeHistoryLayer !== previous) {
+      window.history.pushState(
+        { ...(window.history.state || {}), spotimatch: true, tab: activeTab, layer: activeHistoryLayer },
+        ""
+      );
+    } else if (!activeHistoryLayer && previous && window.history.state?.layer === previous) {
+      window.history.back();
+    }
+  }, [activeHistoryLayer, activeTab]);
+
   // Auto-dismiss incoming notification toast after 6 seconds
   useEffect(() => {
     if (!incomingToast) return;
@@ -290,6 +344,7 @@ export default function Home() {
     setTabHistory(newHistory);
     setHistoryIndex(newHistory.length - 1);
     setActiveTab(targetTab);
+    window.history.pushState({ spotimatch: true, tab: targetTab, layer: null }, "");
   }
 
   function goBack() {
@@ -380,6 +435,7 @@ export default function Home() {
     notifications: "spotify-gradient-chat",
     library: "spotify-gradient-library",
     profile: "spotify-gradient-profile",
+    help: "spotify-gradient-home",
     admin: "spotify-gradient-chat",
   }[activeTab];
 
@@ -391,7 +447,7 @@ export default function Home() {
           <Music2 size={24} />
         </div>
         <LoaderCircle size={28} className="spin text-[#1db954]" />
-        <p className="text-xs font-semibold text-[#b3b3b3]">Tuning your music profileâ€¦</p>
+        <p className="text-xs font-semibold text-[#b3b3b3]">Tuning your music profile…</p>
       </div>
     );
   }
@@ -400,7 +456,7 @@ export default function Home() {
   if (loadFailed) {
     return (
       <div className="h-screen w-screen bg-[#0a0a0a] text-white flex flex-col items-center justify-center gap-4 font-sans p-6 text-center select-none">
-        <h2 className="text-xl font-bold text-white">We couldnâ€™t load your profile.</h2>
+        <h2 className="text-xl font-bold text-white">We couldn’t load your profile.</h2>
         <p className="text-xs text-[#b3b3b3]">Your account is safe. Please check your connection and try again.</p>
         <button
           onClick={() => window.location.reload()}
@@ -409,6 +465,72 @@ export default function Home() {
           Try Again
         </button>
       </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-black px-6 text-white">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(29,185,84,0.2),transparent_34%)]" />
+        <section className="relative flex w-full max-w-md flex-col items-center text-center">
+          <div className="mb-7 flex h-20 w-20 items-center justify-center rounded-full bg-[#1ed760] text-black shadow-[0_0_70px_rgba(30,215,96,0.25)]">
+            <Music2 size={36} strokeWidth={2.5} />
+          </div>
+          <h1 className="text-4xl font-black tracking-[-0.04em] sm:text-5xl">Spoti<span className="text-[#1ed760]">Match</span></h1>
+          <p className="mt-4 max-w-sm text-base text-[#b3b3b3]">Find music friends through the artists, songs, and genres you genuinely listen to.</p>
+          {error && <p className="mt-5 rounded-xl border border-red-400/25 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</p>}
+          <button
+            disabled={!isFirebaseConfigured || busy}
+            onClick={() => run(async () => { if (auth) await signInWithPopup(auth, googleProvider); })}
+            className="mt-8 w-full rounded-full bg-white px-6 py-3.5 text-sm font-black text-black transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Continue with Google
+          </button>
+        </section>
+      </main>
+    );
+  }
+
+  if (!account.profile || account.profile.onboardingStep < 4) {
+    return (
+      <OnboardingFlow
+        user={user}
+        account={account}
+        onSaveProfile={saveProfile}
+        onSaveMusic={saveMusic}
+        onUpdateAccount={setAccount}
+        onComplete={() => saveProfile({}, 4)}
+        onSignOut={async () => { if (auth) await signOut(auth); }}
+      />
+    );
+  }
+
+  const hasListeningData = Boolean(account.music.lastfm || account.music.spotify);
+  if (!hasListeningData) {
+    return (
+      <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-8">
+        <div className="mx-auto max-w-4xl">
+          <header className="mb-8 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1ed760] text-black"><Music2 size={20} /></div><span className="text-xl font-black">SpotiMatch</span></div>
+            <button onClick={() => { if (auth) void signOut(auth); }} className="rounded-full bg-[#242424] px-4 py-2 text-xs font-bold">Sign out</button>
+          </header>
+          <section className="mb-6 rounded-3xl bg-gradient-to-br from-[#183323] to-[#121212] p-6 sm:p-8">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#1ed760]">One last step</p>
+            <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">Add real listening data to enter SpotiMatch</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#b3b3b3]">Your profile is saved, but matching, chat, notifications, Home insights, and Sound Capsule stay locked until you connect Last.fm or import Spotify history.</p>
+          </section>
+          <div className="grid gap-5 lg:grid-cols-2">
+            <LastfmCard connection={account.music.lastfm} run={run} onUpdate={lastfm => setAccount(old => ({...old, music:{...old.music,lastfm}}))} />
+            <section className="rounded-xl border border-[#282828] bg-[#181818] p-5 sm:p-6">
+              <h2 className="text-sm font-bold">Import Spotify history</h2>
+              <p className="mt-2 text-xs leading-5 text-[#b3b3b3]">Your file is processed into listening summaries. Device, IP, and account-identifying fields are not retained.</p>
+              <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl bg-[#121212] p-3 text-xs text-[#dedede]"><input type="checkbox" checked={spotifyConsent} onChange={event => setSpotifyConsent(event.target.checked)} className="mt-0.5 accent-[#1ed760]" /><span>I understand and consent to SpotiMatch processing my Spotify listening-history file.</span></label>
+              {spotifyConsent ? <div className="mt-4"><SpotifyImportCard existing={account.music.spotify} onSave={snapshot => saveMusic("spotify", snapshot)} /></div> : <p className="mt-4 text-xs text-[#727272]">Check the consent box to choose your Spotify file.</p>}
+            </section>
+          </div>
+          <details className="mt-6 rounded-2xl border border-white/10 bg-[#121212] p-5"><summary className="cursor-pointer text-sm font-bold">Setup help</summary><div className="mt-3 space-y-2 text-xs leading-5 text-[#b3b3b3]"><p>Last.fm keeps future listening current after you enable Spotify scrobbling in Last.fm.</p><p>Spotify Extended Streaming History provides your earlier listening and produces stronger matches and monthly capsules.</p></div></details>
+        </div>
+      </main>
     );
   }
 
@@ -483,6 +605,12 @@ export default function Home() {
                         <p className="font-bold text-white truncate">{account.profile.displayName}</p>
                         <p className="text-xs text-[#b3b3b3] truncate">@{account.profile.username}</p>
                       </div>
+                      <button
+                        onClick={() => { navigateTo("help"); setShowProfileDropdown(false); }}
+                        className="w-full text-left px-4 py-2 hover:bg-[#383838] flex items-center gap-2"
+                      >
+                        <CircleHelp size={14} /> Help & setup guide
+                      </button>
                       <button
                         onClick={() => {
                           navigateTo("home");
@@ -779,18 +907,30 @@ export default function Home() {
             />
           )}
           {activeTab === "matches" && (
-            <MatchesView
-              account={account}
-              onNavigate={navigateTo}
-              onOpenUserProfile={u => {
-                setSelectedProfileUser(u);
-              }}
-              onStartDirectChat={f => {
-                setActiveDirectChatFriend(f);
-                navigateTo("chat");
-              }}
-              onOpenSourceModal={setActiveSourceModal}
-            />
+            <div className="relative min-h-[calc(100vh-7rem)] overflow-hidden px-4 py-6 md:px-8 md:py-10">
+              <div aria-hidden="true" className="pointer-events-none select-none blur-[3px] opacity-55">
+                <div className="mb-7 flex items-end justify-between gap-4">
+                  <div><div className="h-3 w-28 rounded-full bg-[#1ed760]/70" /><div className="mt-3 h-10 w-72 max-w-[70vw] rounded-xl bg-white/15" /></div>
+                  <div className="h-9 w-28 rounded-full bg-white/10" />
+                </div>
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {[0, 1, 2, 3, 4, 5].map(item => (
+                    <div key={item} className="rounded-3xl border border-white/10 bg-[#181818] p-5">
+                      <div className="flex items-center gap-4"><div className="h-16 w-16 rounded-full bg-white/10" /><div className="flex-1 space-y-2"><div className="h-4 w-3/5 rounded bg-white/15" /><div className="h-3 w-2/5 rounded bg-white/10" /></div><div className="h-10 w-10 rounded-full bg-[#1ed760]/20" /></div>
+                      <div className="mt-5 h-3 w-full rounded bg-white/10" /><div className="mt-2 h-3 w-4/5 rounded bg-white/10" /><div className="mt-5 h-10 rounded-full bg-white/10" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center bg-black/15 p-5 backdrop-blur-[2px]">
+                <section className="w-full max-w-md rounded-3xl border border-white/10 bg-[#181818]/95 p-7 text-center text-white shadow-[0_24px_80px_rgba(0,0,0,0.65)] md:p-9">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#1ed760]/10 text-[#1ed760]"><Users size={27} /></div>
+                  <h1 className="mt-5 text-2xl font-black tracking-tight">Matches is coming soon</h1>
+                  <p className="mt-3 text-sm leading-6 text-[#b3b3b3]">Waiting for more testers to setup to test this feature.</p>
+                  <button type="button" onClick={() => navigateTo("home")} className="mt-6 rounded-full bg-[#1ed760] px-6 py-3 text-sm font-black text-black transition hover:scale-[1.02] hover:bg-[#1fdf64]">Back to Home</button>
+                </section>
+              </div>
+            </div>
           )}
           {activeTab === "capsule" && (
             <CapsuleView
@@ -827,6 +967,7 @@ export default function Home() {
           {activeTab === "library" && (
             <LibraryView account={account} onOpenSourceModal={setActiveSourceModal} />
           )}
+          {activeTab === "help" && <HelpView onNavigate={navigateTo} />}
           {activeTab === "admin" && user?.emailVerified && user.email?.toLowerCase() === "sohanmutra28@gmail.com" && (
             <AdminDashboard />
           )}
@@ -898,7 +1039,7 @@ export default function Home() {
               </span>
               <span className="block text-[11px] text-[#b3b3b3] truncate">
                 {liveNowPlaying.artist}
-                {liveNowPlaying.album ? ` â€¢ ${liveNowPlaying.album}` : ""}
+                {liveNowPlaying.album ? ` · ${liveNowPlaying.album}` : ""}
               </span>
             </div>
           </div>
