@@ -1,0 +1,8 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // All data access goes through authenticated Next.js routes using Admin SDK.
+    // No browser may read profiles, music, OAuth state or rate-limit records directly.
+    match /{document=**} { allow read, write: if false; }
+  }
+}

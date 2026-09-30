@@ -1,0 +1,269 @@
+[
+  {
+    "kind": "artist",
+    "query": "Kanye",
+    "items": [
+      {
+        "kind": "artist",
+        "name": "Kanye",
+        "artist": "",
+        "url": "https://www.deezer.com/artist/5175553",
+        "image": "https://cdn-images.dzcdn.net/images/artist/3c3577ebb5364e574d8276204ea0d1f5/250x250-000000-80-0-0.jpg",
+        "imageSource": "deezer"
+      },
+      {
+        "kind": "artist",
+        "name": "Kanye West",
+        "artist": "",
+        "url": "https://www.deezer.com/artist/230",
+        "image": "https://cdn-images.dzcdn.net/images/artist/bb76c2ee3b068726ab4c37b0aabdb57a/250x250-000000-80-0-0.jpg",
+        "imageSource": "deezer"
+      },
+      {
+        "kind": "artist",
+        "name": "Kanye West, Dwele",
+        "artist": "",
+        "url": "https://www.last.fm/music/Kanye+West,+Dwele"
+      },
+      {
+        "kind": "artist",
+        "name": "Kanye West, Ye",
+        "artist": "",
+        "url": "https://www.last.fm/music/Kanye+West,+Ye"
+      },
+      {
+        "kind": "artist",
+        "name": "Kanye West, PARTYNEXTDOOR",
+        "artist": "",
+        "url": "https://www.last.fm/music/Kanye+West,+PARTYNEXTDOOR"
+      },
+      {
+        "kind": "artist",
+        "name": "Estelle, Kanye West",
+        "artist": "",
+        "url": "https://www.last.fm/music/Estelle,+Kanye+West"
+      },
+      {
+        "kind": "artist",
+        "name": "JAY-Z & Kanye West",
+        "artist": "",
+        "url": "https://www.last.fm/music/JAY-Z+&+Kanye+West"
+      },
+      {
+        "kind": "artist",
+        "name": "Jaÿ-Z & Kanye West",
+        "artist": "",
+        "url": "https://www.last.fm/music/Ja%C3%BF-Z+&+Kanye+West"
+      },
+      {
+        "kind": "artist",
+        "name": "Kanye West, Pusha T",
+        "artist": "",
+        "url": "https://www.last.fm/music/Kanye+West,+Pusha+T"
+      },
+      {
+        "kind": "artist",
+        "name": "Kanye West, Rick Ross",
+        "artist": "",
+        "url": "https://www.last.fm/music/Kanye+West,+Rick+Ross"
+      },
+      {
+        "kind": "artist",
+        "name": "JAŸ-Z, Kanye West",
+        "artist": "",
+        "url": "https://www.last.fm/music/JA%C5%B8-Z,+Kanye+West"
+      },
+      {
+        "kind": "artist",
+        "name": "Kanye West & Ye",
+        "artist": "",
+        "url": "https://www.last.fm/music/Kanye+West+&+Ye"
+      }
+    ]
+  },
+  {
+    "kind": "track",
+    "query": "lovers rock",
+    "items": [
+      {
+        "kind": "track",
+        "name": "Lovers Rock",
+        "artist": "TV Girl",
+        "url": "https://www.last.fm/music/TV+Girl/_/Lovers+Rock",
+        "image": "https://lastfm-img.freetls.fastly.net/i/u/300x300/4f091d5082e04691c6d7f4b2e2efbdc0.png",
+        "imageSource": "lastfm",
+        "album": "French Exit"
+      },
+      {
+        "kind": "track",
+        "name": "Lovers Rock",
+        "artist": "Sade",
+        "url": "https://www.last.fm/music/Sade/_/Lovers+Rock",
+        "image": "https://lastfm-img.freetls.fastly.net/i/u/300x300/508fc788b188fafdf71ef1da9f10a48f.png",
+        "imageSource": "lastfm",
+        "album": "Lovers Rock"
+      },
+      {
+        "kind": "track",
+        "name": "Lovers Rock",
+        "artist": "Sublime with Rome",
+        "url": "https://www.last.fm/music/Sublime+with+Rome/_/Lovers+Rock",
+        "image": "https://lastfm-img.freetls.fastly.net/i/u/300x300/731858e19ea147e4aa812d66f01e3164.png",
+        "imageSource": "lastfm",
+        "album": "Yours Truly"
+      },
+      {
+        "kind": "track",
+        "name": "Lovers Rock",
+        "artist": "Superpitcher",
+        "url": "https://www.last.fm/music/Superpitcher/_/Lovers+Rock",
+        "image": "https://lastfm-img.freetls.fastly.net/i/u/300x300/83bdee4a14904adb9368be3ffaf84f1b.png",
+        "imageSource": "lastfm",
+        "album": "Here Comes Love"
+      },
+      {
+        "kind": "track",
+        "name": "Lovers Rock",
+        "artist": "Shy FX",
+        "url": "https://www.last.fm/music/Shy+FX/_/Lovers+Rock"
+      },
+      {
+        "kind": "track",
+        "name": "Lovers Rock",
+        "artist": "The Clash",
+        "url": "https://www.last.fm/music/The+Clash/_/Lovers+Rock"
+      },
+      {
+        "kind": "track",
+        "name": "lovers rock",
+        "artist": "Yvel",
+        "url": "https://www.last.fm/music/Yvel/_/lovers+rock",
+        "album": "lovers rock"
+      },
+      {
+        "kind": "track",
+        "name": "Lovers Rock",
+        "artist": "bonobos",
+        "url": "https://www.last.fm/music/bonobos/_/Lovers+Rock",
+        "image": "https://lastfm-img.freetls.fastly.net/i/u/300x300/17a038cd023943587f2aba5d90d257b2.png",
+        "imageSource": "lastfm",
+        "album": "electlyric"
+      },
+      {
+        "kind": "track",
+        "name": "Lovers Rock",
+        "artist": "Tomi Agape",
+        "url": "https://www.last.fm/music/Tomi+Agape/_/Lovers+Rock"
+      },
+      {
+        "kind": "track",
+        "name": "Lovers Rock",
+        "artist": "Sugar Minott",
+        "url": "https://www.last.fm/music/Sugar+Minott/_/Lovers+Rock",
+        "image": "https://lastfm-img.freetls.fastly.net/i/u/300x300/cbf56192d6f445469ece0afa2e2fb1f2.png",
+        "imageSource": "lastfm",
+        "album": "Reggae Anthology: Sugar Minott - Hard Time Pressure"
+      },
+      {
+        "kind": "track",
+        "name": "Lovers Rock",
+        "artist": "Judge Dread",
+        "url": "https://www.last.fm/music/Judge+Dread/_/Lovers+Rock",
+        "album": "Judge Dread - Who Else!"
+      },
+      {
+        "kind": "track",
+        "name": "Lovers Rock",
+        "artist": "Freddie McGregor",
+        "url": "https://www.last.fm/music/Freddie+McGregor/_/Lovers+Rock",
+        "image": "https://lastfm-img.freetls.fastly.net/i/u/300x300/61654e59d87f4889c8da125fd44fc858.png",
+        "imageSource": "lastfm",
+        "album": "Zion Chant"
+      }
+    ]
+  },
+  {
+    "kind": "album",
+    "query": "The new abnormal",
+    "items": [
+      {
+        "kind": "album",
+        "name": "The New Abnormal",
+        "artist": "The Strokes",
+        "image": "https://lastfm-img.freetls.fastly.net/i/u/300x300/576554c542da76c08f0e80c129afcb0e.png",
+        "imageSource": "lastfm",
+        "url": "https://www.last.fm/music/The+Strokes/The+New+Abnormal"
+      },
+      {
+        "kind": "album",
+        "name": "The New Abnormal",
+        "artist": "ザ・ストロークス",
+        "image": "https://lastfm-img.freetls.fastly.net/i/u/300x300/d4fc392662818df68460b0e64cc3830c.png",
+        "imageSource": "lastfm",
+        "url": "https://www.last.fm/music/%E3%82%B6%E3%83%BB%E3%82%B9%E3%83%88%E3%83%AD%E3%83%BC%E3%82%AF%E3%82%B9/The+New+Abnormal"
+      },
+      {
+        "kind": "album",
+        "name": "The New Abnormal",
+        "artist": "Strokes",
+        "url": "https://www.last.fm/music/Strokes/The+New+Abnormal"
+      },
+      {
+        "kind": "album",
+        "name": "The New Abnormal [Explicit]",
+        "artist": "The Strokes",
+        "image": "https://lastfm-img.freetls.fastly.net/i/u/300x300/5fc422e6a46d0be82ae71a0432ed9998.png",
+        "imageSource": "lastfm",
+        "url": "https://www.last.fm/music/The+Strokes/The+New+Abnormal+%5BExplicit%5D"
+      },
+      {
+        "kind": "album",
+        "name": "The New Abnormal",
+        "artist": "Weezer",
+        "url": "https://www.last.fm/music/Weezer/The+New+Abnormal"
+      },
+      {
+        "kind": "album",
+        "name": "The New Abnormal",
+        "artist": "The Strokes - Topic",
+        "url": "https://www.last.fm/music/The+Strokes+-+Topic/The+New+Abnormal"
+      },
+      {
+        "kind": "album",
+        "name": "The New Abnormal",
+        "artist": "Duster",
+        "url": "https://www.last.fm/music/Duster/The+New+Abnormal"
+      },
+      {
+        "kind": "album",
+        "name": "The New Abnormal",
+        "artist": "The Strokes - The New Abnormal",
+        "url": "https://www.last.fm/music/The+Strokes+-+The+New+Abnormal/The+New+Abnormal"
+      },
+      {
+        "kind": "album",
+        "name": "The New Abnormal",
+        "artist": "鼓擊樂團",
+        "url": "https://www.last.fm/music/%E9%BC%93%E6%93%8A%E6%A8%82%E5%9C%98/The+New+Abnormal"
+      },
+      {
+        "kind": "album",
+        "name": "The New Abnormal",
+        "artist": "The New Abnormal",
+        "url": "https://www.last.fm/music/The+New+Abnormal/The+New+Abnormal"
+      },
+      {
+        "kind": "album",
+        "name": "The New Abnormal",
+        "artist": "MAXI MERAKI",
+        "url": "https://www.last.fm/music/MAXI+MERAKI/The+New+Abnormal"
+      },
+      {
+        "kind": "album",
+        "name": "The New Abnormal",
+        "artist": "Arctic Monkeys",
+        "url": "https://www.last.fm/music/Arctic+Monkeys/The+New+Abnormal"
+      }
+    ]
+  }
+]
