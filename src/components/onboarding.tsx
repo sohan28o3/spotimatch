@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { User } from "firebase/auth";
 import {
@@ -237,7 +237,7 @@ export function ProfileForm({
                   onChange={e => setName(e.target.value)}
                   placeholder="Your name"
                   autoComplete="name"
-                  className="w-full px-3 py-2 text-sm bg-[#1b1b1b] border border-[#282828] focus:border-[#1db954] rounded-xl text-white placeholder-[#727272] outline-none transition-colors"
+                  className="w-full px-3 py-2 text-base sm:text-sm bg-[#1b1b1b] border border-[#282828] focus:border-[#1db954] rounded-xl text-white placeholder-[#727272] outline-none transition-colors"
                 />
               </div>
               <div>
@@ -252,10 +252,10 @@ export function ProfileForm({
                     minLength={3}
                     maxLength={24}
                     value={username}
-                    onChange={e => setUsername(e.target.value.toLowerCase())}
+                    onChange={e => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
                     placeholder="handle"
                     autoComplete="username"
-                    className="w-full pl-7 pr-3 py-2 text-sm bg-[#1b1b1b] border border-[#282828] focus:border-[#1db954] rounded-xl text-white placeholder-[#727272] outline-none transition-colors"
+                    className="w-full pl-7 pr-3 py-2 text-base sm:text-sm bg-[#1b1b1b] border border-[#282828] focus:border-[#1db954] rounded-xl text-white placeholder-[#727272] outline-none transition-colors"
                   />
                 </div>
                 <p className="text-[10px] text-[#727272] mt-0.5">3-24 letters, numbers, or underscores</p>

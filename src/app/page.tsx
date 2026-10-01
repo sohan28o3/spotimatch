@@ -547,48 +547,23 @@ export default function Home() {
     );
   }
 
-  const hasListeningData = Boolean(account.music.lastfm || account.music.spotify);
-  if (!hasListeningData) {
-    return (
-      <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-8">
-        <div className="mx-auto max-w-4xl">
-          <header className="mb-8 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1ed760] text-black"><Music2 size={20} /></div><span className="text-xl font-black">SpotiMatch</span></div>
-            <button onClick={() => { if (auth) void signOut(auth); }} className="rounded-full bg-[#242424] px-4 py-2 text-xs font-bold">Sign out</button>
-          </header>
-          <section className="mb-6 rounded-3xl bg-gradient-to-br from-[#183323] to-[#121212] p-6 sm:p-8">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#1ed760]">One last step</p>
-            <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">Add real listening data to enter SpotiMatch</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#b3b3b3]">Your profile is saved, but matching, chat, notifications, Home insights, and Sound Capsule stay locked until you connect Last.fm or import Spotify history.</p>
-          </section>
-          <div className="grid gap-5 lg:grid-cols-2">
-            <LastfmCard connection={account.music.lastfm} run={run} onUpdate={lastfm => setAccount(old => ({...old, music:{...old.music,lastfm}}))} />
-            <section className="rounded-xl border border-[#282828] bg-[#181818] p-5 sm:p-6">
-              <h2 className="text-sm font-bold">Import Spotify history</h2>
-              <p className="mt-2 text-xs leading-5 text-[#b3b3b3]">Your file is processed into listening summaries. Device, IP, and account-identifying fields are not retained.</p>
-              <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl bg-[#121212] p-3 text-xs text-[#dedede]"><input type="checkbox" checked={spotifyConsent} onChange={event => setSpotifyConsent(event.target.checked)} className="mt-0.5 accent-[#1ed760]" /><span>I understand and consent to SpotiMatch processing my Spotify listening-history file.</span></label>
-              {spotifyConsent ? <div className="mt-4"><SpotifyImportCard existing={account.music.spotify} onSave={snapshot => saveMusic("spotify", snapshot)} /></div> : <p className="mt-4 text-xs text-[#727272]">Check the consent box to choose your Spotify file.</p>}
-            </section>
-          </div>
-          <details className="mt-6 rounded-2xl border border-white/10 bg-[#121212] p-5"><summary className="cursor-pointer text-sm font-bold">Setup help</summary><div className="mt-3 space-y-2 text-xs leading-5 text-[#b3b3b3]"><p>Last.fm keeps future listening current after you enable Spotify scrobbling in Last.fm.</p><p>Spotify Extended Streaming History provides your earlier listening and produces stronger matches and monthly capsules.</p></div></details>
-        </div>
-      </main>
-    );
-  }
-
   return (
     <div className="h-[100dvh] w-screen bg-black text-white font-sans overflow-hidden flex flex-col select-none">
       {/* Top Navigation Bar */}
-      <nav className="h-16 shrink-0 bg-black/95 md:bg-black border-b border-white/10 flex items-center justify-between px-4 md:px-6 relative z-30 backdrop-blur-xl">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-[#1db954] flex items-center justify-center text-black shadow-md">
+      <nav className="h-14 sm:h-16 shrink-0 bg-black/95 md:bg-black border-b border-white/10 flex items-center justify-between px-3 md:px-6 relative z-30 backdrop-blur-xl">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <button
+            type="button"
+            onClick={() => navigateTo("home")}
+            className="flex items-center gap-2 cursor-pointer bg-transparent border-none p-0 text-left"
+          >
+            <div className="w-8 h-8 rounded-full bg-[#1db954] flex items-center justify-center text-black shadow-md shrink-0">
               <Sparkles size={16} />
             </div>
-            <span className="font-black text-lg tracking-tight hidden sm:block">Spotimatch</span>
-          </div>
+            <span className="font-black text-base sm:text-lg tracking-tight text-white">SpotiMatch</span>
+          </button>
 
-          <div className="hidden sm:flex items-center gap-1.5 ml-1">
+          <div className="flex items-center gap-1 ml-0.5 sm:ml-1">
             <button
               disabled={historyIndex <= 0}
               onClick={() => {
@@ -597,10 +572,11 @@ export default function Home() {
                   setActiveTab(tabHistory[historyIndex - 1]);
                 }
               }}
-              className="w-8 h-8 rounded-full bg-black/60 hover:bg-black/90 disabled:opacity-30 disabled:hover:bg-black/60 text-white flex items-center justify-center transition-all cursor-pointer disabled:cursor-not-allowed"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-black/60 hover:bg-black/90 disabled:opacity-25 text-white flex items-center justify-center transition-all cursor-pointer disabled:cursor-not-allowed"
               title="Go back"
+              aria-label="Go back"
             >
-              <ChevronLeft size={18} />
+              <ChevronLeft size={16} />
             </button>
             <button
               disabled={historyIndex >= tabHistory.length - 1}
@@ -610,10 +586,11 @@ export default function Home() {
                   setActiveTab(tabHistory[historyIndex + 1]);
                 }
               }}
-              className="w-8 h-8 rounded-full bg-black/60 hover:bg-black/90 disabled:opacity-30 disabled:hover:bg-black/60 text-white flex items-center justify-center transition-all cursor-pointer disabled:cursor-not-allowed"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-black/60 hover:bg-black/90 disabled:opacity-25 text-white flex items-center justify-center transition-all cursor-pointer disabled:cursor-not-allowed"
               title="Go forward"
+              aria-label="Go forward"
             >
-              <ChevronRight size={18} />
+              <ChevronRight size={16} />
             </button>
           </div>
         </div>
@@ -1020,37 +997,76 @@ export default function Home() {
       {/* BOTTOM NAVIGATION BAR */}
       {/* ================================================================= */}
       {loggedIn && account.profile && (
-        <nav className="fixed inset-x-0 bottom-0 md:hidden min-h-[72px] bg-[#121212]/95 border-t border-white/10 flex items-center justify-around px-2 pt-1 pb-[max(env(safe-area-inset-bottom),0.5rem)] z-40 backdrop-blur-xl shadow-[0_-8px_24px_rgba(0,0,0,0.35)]">
-          <button onClick={() => navigateTo("home")} className={`flex min-w-14 flex-col items-center gap-1 rounded-xl px-2 py-1.5 transition-colors ${activeTab === "home" ? "bg-white/10 text-white" : "text-[#a7a7a7] hover:text-white"}`}>
-            <HomeIcon size={20} className={activeTab === "home" ? "fill-current" : ""} />
-            <span className="text-[10px] font-medium">Home</span>
-          </button>
-          <button onClick={() => navigateTo("matches")} className={`flex min-w-14 flex-col items-center gap-1 rounded-xl px-2 py-1.5 transition-colors ${activeTab === "matches" ? "bg-white/10 text-white" : "text-[#a7a7a7] hover:text-white"}`}>
-            <Users size={20} className={activeTab === "matches" ? "fill-current" : ""} />
-            <span className="text-[10px] font-medium">Matches</span>
-          </button>
-          <button onClick={() => navigateTo("capsule")} className={`flex min-w-14 flex-col items-center gap-1 rounded-xl px-2 py-1.5 transition-colors ${activeTab === "capsule" ? "bg-white/10 text-white" : "text-[#a7a7a7] hover:text-white"}`}>
-            <Sparkles size={20} className={activeTab === "capsule" ? "fill-current" : ""} />
-            <span className="text-[10px] font-medium">Capsule</span>
-          </button>
-          <button onClick={() => navigateTo("chat")} className={`relative flex min-w-14 flex-col items-center gap-1 rounded-xl px-2 py-1.5 transition-colors ${activeTab === "chat" ? "bg-white/10 text-white" : "text-[#a7a7a7] hover:text-white"}`}>
-            <div className="relative">
-              <MessageSquare size={20} className={activeTab === "chat" ? "fill-current" : ""} />
-              {unreadChatUserIds.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-[#121212]" />
-              )}
-            </div>
-            <span className="text-[10px] font-medium">Chat</span>
-          </button>
-          <button onClick={() => navigateTo("notifications")} className={`relative flex min-w-14 flex-col items-center gap-1 rounded-xl px-2 py-1.5 transition-colors ${activeTab === "notifications" ? "bg-white/10 text-white" : "text-[#a7a7a7] hover:text-white"}`}>
-            <div className="relative">
-              <Bell size={20} className={activeTab === "notifications" ? "fill-current" : ""} />
-              {hasUnreadNotifications && (
-                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#1db954] rounded-full border border-[#121212]" />
-              )}
-            </div>
-            <span className="text-[10px] font-medium">Alerts</span>
-          </button>
+        <nav
+          aria-label="Mobile Navigation"
+          className="fixed inset-x-0 bottom-0 md:hidden z-40 bg-[#121212]/95 border-t border-white/10 px-1 pt-1.5 pb-[max(env(safe-area-inset-bottom),0.6rem)] backdrop-blur-xl shadow-[0_-8px_24px_rgba(0,0,0,0.45)]"
+        >
+          <div className="flex items-center justify-around max-w-md mx-auto">
+            <button
+              onClick={() => navigateTo("home")}
+              className={`flex flex-1 flex-col items-center gap-1 rounded-xl py-1 transition-colors cursor-pointer ${
+                activeTab === "home" ? "text-white" : "text-[#888888] hover:text-white"
+              }`}
+            >
+              <HomeIcon size={20} className={activeTab === "home" ? "fill-current text-[#1db954]" : ""} />
+              <span className={`text-[10px] ${activeTab === "home" ? "font-bold text-white" : "font-medium"}`}>Home</span>
+            </button>
+            <button
+              onClick={() => navigateTo("matches")}
+              className={`flex flex-1 flex-col items-center gap-1 rounded-xl py-1 transition-colors cursor-pointer ${
+                activeTab === "matches" ? "text-white" : "text-[#888888] hover:text-white"
+              }`}
+            >
+              <Users size={20} className={activeTab === "matches" ? "fill-current text-[#1db954]" : ""} />
+              <span className={`text-[10px] ${activeTab === "matches" ? "font-bold text-white" : "font-medium"}`}>Matches</span>
+            </button>
+            <button
+              onClick={() => navigateTo("capsule")}
+              className={`flex flex-1 flex-col items-center gap-1 rounded-xl py-1 transition-colors cursor-pointer ${
+                activeTab === "capsule" ? "text-white" : "text-[#888888] hover:text-white"
+              }`}
+            >
+              <Sparkles size={20} className={activeTab === "capsule" ? "fill-current text-[#d946ef]" : ""} />
+              <span className={`text-[10px] ${activeTab === "capsule" ? "font-bold text-white" : "font-medium"}`}>Capsule</span>
+            </button>
+            <button
+              onClick={() => navigateTo("chat")}
+              className={`relative flex flex-1 flex-col items-center gap-1 rounded-xl py-1 transition-colors cursor-pointer ${
+                activeTab === "chat" ? "text-white" : "text-[#888888] hover:text-white"
+              }`}
+            >
+              <div className="relative">
+                <MessageSquare size={20} className={activeTab === "chat" ? "fill-current text-[#1db954]" : ""} />
+                {unreadChatUserIds.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-[#121212]" />
+                )}
+              </div>
+              <span className={`text-[10px] ${activeTab === "chat" ? "font-bold text-white" : "font-medium"}`}>Chat</span>
+            </button>
+            <button
+              onClick={() => navigateTo("notifications")}
+              className={`relative flex flex-1 flex-col items-center gap-1 rounded-xl py-1 transition-colors cursor-pointer ${
+                activeTab === "notifications" ? "text-white" : "text-[#888888] hover:text-white"
+              }`}
+            >
+              <div className="relative">
+                <Bell size={20} className={activeTab === "notifications" ? "fill-current text-[#1db954]" : ""} />
+                {hasUnreadNotifications && (
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#1db954] rounded-full border border-[#121212]" />
+                )}
+              </div>
+              <span className={`text-[10px] ${activeTab === "notifications" ? "font-bold text-white" : "font-medium"}`}>Alerts</span>
+            </button>
+            <button
+              onClick={() => navigateTo("library")}
+              className={`flex flex-1 flex-col items-center gap-1 rounded-xl py-1 transition-colors cursor-pointer ${
+                activeTab === "library" ? "text-white" : "text-[#888888] hover:text-white"
+              }`}
+            >
+              <LibraryIcon size={20} className={activeTab === "library" ? "text-[#1db954]" : ""} />
+              <span className={`text-[10px] ${activeTab === "library" ? "font-bold text-white" : "font-medium"}`}>Library</span>
+            </button>
+          </div>
         </nav>
       )}
 

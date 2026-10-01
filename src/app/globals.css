@@ -29,7 +29,8 @@ body {
   color: #ffffff;
   font-family: -apple-system, BlinkMacSystemFont, "Circular", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-size: 14px;
-  overflow: hidden;
+  overflow-x: hidden;
+  min-height: 100dvh;
   user-select: none;
   -webkit-font-smoothing: antialiased;
 }
